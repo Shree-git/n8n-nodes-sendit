@@ -45,10 +45,29 @@ npm install n8n-nodes-sendit
 
 To use this node, you need a SendIt API key:
 
-1. Go to [SendIt Dashboard](https://sendit.infiniteappsai.com/dashboard)
-2. Navigate to API Keys section
-3. Create a new API key
-4. Use the API key in n8n credentials
+### Getting Your API Key
+
+1. **Sign in** to [SendIt](https://sendit.infiniteappsai.com) using your email (magic link authentication)
+2. Go to your [Dashboard](https://sendit.infiniteappsai.com/dashboard)
+3. In the **API Keys** section, click **"Create New Key"**
+4. Give it a name (e.g., "n8n Integration") and click Create
+5. **Copy your API key immediately** - it's only shown once!
+
+### API Key Format
+
+```
+sk_live_<32_character_string>
+```
+
+Keys always start with `sk_live_` followed by 32 alphanumeric characters.
+
+### Configuring in n8n
+
+1. In n8n, go to **Credentials** → **New Credential** → **SendIt API**
+2. Paste your API key
+3. Click **Save**
+
+> **Note:** Your API key is only shown once when created. If you lose it, you'll need to create a new one from the dashboard.
 
 ## Resources
 
