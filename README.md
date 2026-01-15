@@ -71,7 +71,7 @@ Keys always start with `sk_live_` followed by 32 alphanumeric characters.
 
 ## Resources
 
-- [SendIt Documentation](https://sendit.infiniteappsai.com/docs)
+- [SendIt Documentation](https://sendit.infiniteappsai.com/documentation.html)
 - [n8n Community Nodes Documentation](https://docs.n8n.io/integrations/community-nodes/)
 
 ## License

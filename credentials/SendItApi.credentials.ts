@@ -8,7 +8,7 @@ import {
 export class SendItApi implements ICredentialType {
   name = 'sendItApi';
   displayName = 'SendIt API';
-  documentationUrl = 'https://sendit.infiniteappsai.com/docs';
+  documentationUrl = 'https://sendit.infiniteappsai.com/documentation.html';
   properties: INodeProperties[] = [
     {
       displayName: 'API Key',
