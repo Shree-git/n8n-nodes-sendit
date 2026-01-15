@@ -1,0 +1,67 @@
+{
+  "name": "Google Sheets to Social Media",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "sheetName": "Posts",
+        "options": {}
+      },
+      "id": "trigger-1",
+      "name": "Google Sheets Trigger",
+      "type": "n8n-nodes-base.googleSheetsTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "publish",
+        "platforms": "={{ $json.platforms.split(',') }}",
+        "text": "={{ $json.text }}",
+        "mediaUrl": "={{ $json.mediaUrl }}"
+      },
+      "id": "sendit-1",
+      "name": "SendIt Publish",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Google Sheets Trigger": {
+      "main": [
+        [
+          {
+            "node": "SendIt Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
