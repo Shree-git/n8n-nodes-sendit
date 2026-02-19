@@ -190,6 +190,63 @@
       "category": "scheduling",
       "difficulty": "advanced",
       "estimated_setup": "15 minutes"
+    },
+    {
+      "id": "library-lifecycle-automation",
+      "name": "Library Lifecycle Automation",
+      "description": "Create, update, and publish-ready validate a reusable content library item",
+      "nodes": [
+        "Manual Trigger",
+        "SendIt (Library Create)",
+        "SendIt (Library Get)",
+        "SendIt (Library Update)"
+      ],
+      "category": "content-management",
+      "difficulty": "intermediate",
+      "estimated_setup": "10 minutes"
+    },
+    {
+      "id": "approvals-queue-processing",
+      "name": "Approvals Queue Processing",
+      "description": "Poll pending approvals and route approve/reject actions based on policy",
+      "nodes": [
+        "Schedule Trigger",
+        "SendIt (Approvals List)",
+        "IF (Policy Check)",
+        "SendIt (Approve/Reject)"
+      ],
+      "category": "team-collaboration",
+      "difficulty": "advanced",
+      "estimated_setup": "15 minutes"
+    },
+    {
+      "id": "listening-alert-escalation",
+      "name": "Listening Alert Escalation",
+      "description": "Track mentions and alerts, then route high-priority sentiment signals",
+      "nodes": [
+        "Schedule Trigger",
+        "SendIt (Listening List Mentions)",
+        "SendIt (Listening List Alerts)",
+        "IF (High Priority)",
+        "Slack/Email Notification"
+      ],
+      "category": "monitoring",
+      "difficulty": "advanced",
+      "estimated_setup": "15 minutes"
+    },
+    {
+      "id": "capabilities-connect-advanced",
+      "name": "Capabilities + Connect + Advanced API",
+      "description": "Discover platform capabilities, validate connect flows, and call long-tail endpoints",
+      "nodes": [
+        "Manual Trigger",
+        "SendIt (Meta Get Capabilities)",
+        "SendIt (Connect Get Connect Action)",
+        "SendIt (Advanced API Request)"
+      ],
+      "category": "advanced",
+      "difficulty": "advanced",
+      "estimated_setup": "15 minutes"
     }
   ],
   "categories": {
@@ -211,7 +268,8 @@
   "metadata": {
     "app_name": "SendIt",
     "n8n_node": "n8n-nodes-sendit",
-    "version": "1.0.0",
-    "last_updated": "2025-01-14"
+    "version": "1.1.0",
+    "last_updated": "2026-02-19",
+    "capabilities_source": "https://sendit.infiniteappsai.com/api/v1/capabilities"
   }
 }
