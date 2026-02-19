@@ -1,0 +1,131 @@
+{
+  "name": "SendIt Test 06 - Approvals Lifecycle",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "approvals",
+        "operation": "list"
+      },
+      "id": "approvals_list",
+      "name": "SendIt - Approvals List",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [260, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Approvals list failed');\nconst posts = Array.isArray(payload.posts) ? payload.posts : Array.isArray(payload.data?.posts) ? payload.data.posts : [];\nconst firstId = posts[0]?.id || '';\nreturn [{ json: { pendingCount: posts.length, approvalPostId: firstId, canMutate: false } }];"
+      },
+      "id": "normalize_approvals",
+      "name": "Normalize Approvals",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.canMutate && !!$json.approvalPostId }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if_mutate",
+      "name": "IF Run Approve/Reject?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "resource": "approvals",
+        "operation": "approve",
+        "approvalPostId": "={{ $json.approvalPostId }}",
+        "approvalComment": "Automated approval check"
+      },
+      "id": "approvals_approve",
+      "name": "SendIt - Approvals Approve",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1040, -120],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "approvals",
+        "operation": "reject",
+        "approvalPostId": "={{ $json.approvalPostId }}",
+        "approvalReason": "Automated rejection check"
+      },
+      "id": "approvals_reject",
+      "name": "SendIt - Approvals Reject",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1040, 120],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { passed: true, scenario: 'approvals_list_only', note: 'Set canMutate=true in Normalize Approvals to execute approve/reject paths.' } }];"
+      },
+      "id": "safe_complete",
+      "name": "Safe Complete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "SendIt - Approvals List", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Approvals List": {
+      "main": [[{ "node": "Normalize Approvals", "type": "main", "index": 0 }]]
+    },
+    "Normalize Approvals": {
+      "main": [[{ "node": "IF Run Approve/Reject?", "type": "main", "index": 0 }]]
+    },
+    "IF Run Approve/Reject?": {
+      "main": [
+        [{ "node": "SendIt - Approvals Approve", "type": "main", "index": 0 }],
+        [{ "node": "Safe Complete", "type": "main", "index": 0 }]
+      ]
+    },
+    "SendIt - Approvals Approve": {
+      "main": [[{ "node": "SendIt - Approvals Reject", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
