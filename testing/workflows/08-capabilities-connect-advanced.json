@@ -1,0 +1,88 @@
+{
+  "name": "SendIt Test 08 - Capabilities Connect Advanced",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "meta",
+        "operation": "getCapabilities"
+      },
+      "id": "meta_capabilities",
+      "name": "SendIt - Meta Capabilities",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [250, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "connect",
+        "operation": "getConnectAction",
+        "connectPlatform": "linkedin"
+      },
+      "id": "connect_action",
+      "name": "SendIt - Connect Action",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [520, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "advanced",
+        "operation": "apiRequest",
+        "advancedMethod": "GET",
+        "advancedPath": "/api/v2/capabilities",
+        "advancedQueryJson": "{}",
+        "advancedBodyJson": "",
+        "advancedResponseMode": "json",
+        "requestTimeoutMs": 10000
+      },
+      "id": "advanced_request",
+      "name": "SendIt - Advanced API Request",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "SendIt - Meta Capabilities", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Meta Capabilities": {
+      "main": [[{ "node": "SendIt - Connect Action", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Connect Action": {
+      "main": [[{ "node": "SendIt - Advanced API Request", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
