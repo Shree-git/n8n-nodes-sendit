@@ -1,8 +1,12 @@
 # n8n-nodes-sendit
 
-This is an n8n community node for [SendIt](https://sendit.infiniteappsai.com) - a multi-platform social media publishing service.
+This is an n8n community node for [SendIt](https://sendit.infiniteappsai.com), an AI-native multi-platform social publishing API.
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
+
+## Release Notes (v1.1.0)
+
+`1.1.0` is a non-breaking additive release. Existing resources/operations remain intact and new typed coverage is added for meta, content scoring, library, approvals, bulk scheduling, connect, webhook testing, expanded listening/inbox operations, trigger event parity, and advanced v1/v2 API requests.
 
 ## Installation
 
@@ -12,62 +16,132 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 npm install n8n-nodes-sendit
 ```
 
-## Operations
+## Node Coverage (v1.1.0)
 
-### Triggers
+### Trigger
 
-- **On post published** - Triggers when a post is successfully published
-- **On post scheduled** - Triggers when a post is scheduled
-- **On post failed** - Triggers when a post fails to publish
-- **On post deleted** - Triggers when a scheduled post is cancelled
-- **On account connected** - Triggers when a social account is connected
-- **On account disconnected** - Triggers when a social account is disconnected
+`SendIt Trigger` supports catalog events plus custom override:
+
+- Post lifecycle: `post.published`, `post.scheduled`, `post.failed`, `post.deleted`, `post.dead_lettered`
+- Account lifecycle: `account.connected`, `account.disconnected`, `account.token_expiring`, `account.token_refresh_failed`, `account.reconnect_required`, `account.refresh_recovered`, `account.auth_recovery_completed`
+- Listening: `mention.detected`, `mention.negative_sentiment`
+- Team: `team.member_joined`, `team.member_left`, `team.member_role_changed`, `team.invitation_sent`, `team.invitation_accepted`, `team.invitation_declined`
+- Approvals: `approval.submitted`, `approval.step_approved`, `approval.request_changes`, `approval.rejected`
+- Analytics/Security/Audit: `analytics.anomaly_detected`, `security.api_key_rotation_due`, `audit.critical`
+
+`Custom Event` lets you subscribe to an event string not listed yet in the static dropdown.
 
 ### Actions
 
-- **Publish Post** - Publish content immediately to selected platforms
-- **Schedule Post** - Schedule content for future publishing
-- **List Scheduled Posts** - Get all scheduled posts
-- **Cancel Scheduled Post** - Cancel a scheduled post
-- **Trigger Scheduled Post** - Publish a scheduled post immediately
-- **List Accounts** - Get all connected social media accounts
-- **Validate Content** - Validate content before publishing
+| Resource | Operation(s) |
+|----------|---------------|
+| `post` | `publish`, `publishAi` |
+| `ai` | `generate` |
+| `media` | `upload` |
+| `scheduledPost` | `create`, `getAll`, `delete`, `trigger` |
+| `account` | `getAll` |
+| `validation` | `validate` |
+| `analytics` | `getAnalytics` |
+| `brandVoice` | `create`, `list` |
+| `campaign` | `plan`, `list`, `schedule` |
+| `inbox` | `list`, `reply`, `getThread`, `updateStatus` |
+| `listening` | `refresh`, `listKeywords`, `createKeyword`, `getKeyword`, `updateKeyword`, `deleteKeyword`, `listMentions`, `getMention`, `markMentionsRead`, `archiveMentions`, `listAlerts`, `markAlertsRead`, `dismissAlerts`, `getSummary` |
+| `aiMedia` | `create`, `getStatus` |
+| `meta` | `getCapabilities`, `getRequirements`, `getPlatformSettingsSchema`, `getBestTimes`, `getWebhookEventsCatalog`, `getWebhookTriggers` |
+| `contentScore` | `score` |
+| `library` | `list`, `create`, `get`, `update`, `delete`, `listCategories`, `listTags` |
+| `approvals` | `list`, `approve`, `reject` |
+| `bulkSchedule` | `listImports`, `getImport`, `validateCsv`, `importCsv`, `downloadTemplate` |
+| `connect` | `getConnectAction`, `connectToken`, `connectWebhook` |
+| `webhooks` | `testWebhook` |
+| `advanced` | `apiRequest` |
+
+### Global Optional Headers
+
+The action node supports optional request-scoped headers:
+
+- `teamId` -> sent as `X-Team-ID`
+- `idempotencyKey` -> sent as `Idempotency-Key`
 
 ## Supported Platforms
 
-- LinkedIn
-- Instagram
-- Threads
-- TikTok
-- X (Twitter)
+The node ships with the full SendIt platform catalog option list and should be treated as catalog-driven. Always use capabilities/meta operations (`meta.getCapabilities`) to verify current operator-side availability.
+
+## Examples
+
+### Connect token credentials (`connect.connectToken`)
+
+`Credentials JSON` example:
+
+```json
+{"apiKey":"your-platform-key","apiSecret":"your-platform-secret"}
+```
+
+### Create library item (`library.create`)
+
+- `libraryTitle`: `Weekly Product Update`
+- `libraryText`: `New launch highlights...`
+- `libraryType`: `template`
+- `libraryTargetPlatforms`: `linkedin`, `x`
+
+### Approve scheduled post (`approvals.approve`)
+
+- `approvalPostId`: `sched_abc123`
+- `approvalComment`: `Approved for publishing`
+
+### Advanced request (`advanced.apiRequest`)
+
+- `method`: `GET`
+- `path`: `/api/v2/capabilities`
+- `queryJson`: `{"include_beta":"1"}`
+- `responseMode`: `json`
+
+Allowed path prefixes:
+
+- `/api/v1/`
+- `/api/v2/`
+
+## API Contract Notes
+
+- Inbox replies use `text` in `POST /api/v1/inbox/:threadId/reply`.
+- Campaign planning uses `brief` + `platforms` (optional `postCount`, `startDate`, `endDate`).
+- AI media create uses `provider`, `prompt`, `media_type`, and `parameters`.
+- Bulk CSV validation/import expect raw CSV string in `csvContent`.
+
+## Developer Note: 1.1.0 Endpoint Map Freeze
+
+### Typed coverage (locked)
+
+- Meta: `/capabilities`, `/requirements`, `/platforms/schema`, `/best-times`, `/webhooks/events-catalog`, `/webhooks/triggers`
+- Publishing/scheduling: `/publish`, `/publish-ai`, `/schedule`, `/scheduled`, `/scheduled/:id`, `/scheduled/:id/trigger`
+- AI/media: `/ai/generate-content`, `/media/upload`, `/ai-media`, `/ai-media/:id`
+- Quality/validation: `/validate`, `/content-score`, `/analytics`
+- Collaboration: `/inbox`, `/inbox/:threadId`, `/inbox/:threadId/reply`, `/inbox/:threadId/status`
+- Listening: `/listening/*` keyword/mention/alert/summary/refresh routes
+- Library: `/library`, `/library/:id`, `/library/categories`, `/library/tags`
+- Approvals: `/approvals`, `/approvals/:postId/approve`, `/approvals/:postId/reject`
+- Bulk: `/bulk-schedule`, `/bulk-schedule/:id`, `/bulk-schedule/validate`, `/bulk-schedule/import`, `/bulk-schedule/template`
+- Connect: `/connect/:platform`, `/connect/token`, `/connect/webhook`
+- Webhook helper: `/webhooks/:id/test`
+
+### Advanced coverage (long-tail + v2)
+
+Use `advanced.apiRequest` for operations outside typed coverage, including v2 dashboard-heavy surfaces.
 
 ## Credentials
 
 To use this node, you need a SendIt API key:
 
-### Getting Your API Key
+1. Sign in to [SendIt](https://sendit.infiniteappsai.com)
+2. Open your [Dashboard](https://sendit.infiniteappsai.com/dashboard)
+3. Create an API key in **API Keys**
+4. Configure in n8n under **Credentials** -> **SendIt API**
 
-1. **Sign in** to [SendIt](https://sendit.infiniteappsai.com) using your email (magic link authentication)
-2. Go to your [Dashboard](https://sendit.infiniteappsai.com/dashboard)
-3. In the **API Keys** section, click **"Create New Key"**
-4. Give it a name (e.g., "n8n Integration") and click Create
-5. **Copy your API key immediately** - it's only shown once!
+API key format:
 
-### API Key Format
-
-```
+```text
 sk_live_<32_character_string>
 ```
-
-Keys always start with `sk_live_` followed by 32 alphanumeric characters.
-
-### Configuring in n8n
-
-1. In n8n, go to **Credentials** → **New Credential** → **SendIt API**
-2. Paste your API key
-3. Click **Save**
-
-> **Note:** Your API key is only shown once when created. If you lose it, you'll need to create a new one from the dashboard.
 
 ## Resources
 
