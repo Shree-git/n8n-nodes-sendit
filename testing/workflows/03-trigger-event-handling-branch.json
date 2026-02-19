@@ -1,0 +1,117 @@
+{
+  "name": "SendIt Test 03 - Trigger Event Handling Branch",
+  "nodes": [
+    {
+      "parameters": {
+        "event": "post.failed"
+      },
+      "id": "sendit_trigger",
+      "name": "SendIt Trigger - Post Failed",
+      "type": "n8n-nodes-sendit.sendItTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst eventType = input.event || input.type || 'unknown';\nconst platform = input.platform || input.data?.platform || input.post?.platform || 'unknown';\nconst postId = input.postId || input.post?.id || input.data?.postId || null;\nreturn [{\n  json: {\n    eventType,\n    platform,\n    postId,\n    sourcePayload: input,\n  },\n}];"
+      },
+      "id": "normalize_payload",
+      "name": "Normalize Trigger Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.platform }}",
+              "operation": "equal",
+              "value2": "x"
+            }
+          ]
+        }
+      },
+      "id": "if_x_platform",
+      "name": "Is X Platform?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [520, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'x_quota_sensitive',\n    severity: 'high',\n    action: 'route_to_quota_aware_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n  },\n}];"
+      },
+      "id": "handle_x_branch",
+      "name": "Handle X Branch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, -120]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'standard_platform',\n    severity: 'medium',\n    action: 'route_to_standard_failure_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n  },\n}];"
+      },
+      "id": "handle_standard_branch",
+      "name": "Handle Standard Branch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 120]
+    }
+  ],
+  "connections": {
+    "SendIt Trigger - Post Failed": {
+      "main": [
+        [
+          {
+            "node": "Normalize Trigger Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Trigger Payload": {
+      "main": [
+        [
+          {
+            "node": "Is X Platform?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is X Platform?": {
+      "main": [
+        [
+          {
+            "node": "Handle X Branch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle Standard Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
