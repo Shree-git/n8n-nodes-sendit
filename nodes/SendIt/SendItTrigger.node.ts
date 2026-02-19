@@ -5,7 +5,195 @@ import {
   INodeTypeDescription,
   IWebhookResponseData,
   IHttpRequestMethods,
+  NodeOperationError,
 } from 'n8n-workflow';
+import crypto from 'crypto';
+
+const SENDIT_API_BASE_URL = 'https://sendit.infiniteappsai.com/api/v1';
+const SIGNATURE_TOLERANCE_SECONDS = 300;
+
+function verifyWebhookSignature(
+  payload: string,
+  signature: string,
+  secret: string,
+): boolean {
+  try {
+    const parts = signature.split(',');
+    const timestampPart = parts.find((p) => p.startsWith('t='));
+    const signaturePart = parts.find((p) => p.startsWith('v1='));
+
+    if (!timestampPart || !signaturePart) {
+      return false;
+    }
+
+    const timestamp = parseInt(timestampPart.substring(2), 10);
+    const expectedSignature = signaturePart.substring(3);
+
+    const now = Math.floor(Date.now() / 1000);
+    if (Math.abs(now - timestamp) > SIGNATURE_TOLERANCE_SECONDS) {
+      return false;
+    }
+
+    const signedPayload = `${timestamp}.${payload}`;
+    const computedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(signedPayload)
+      .digest('hex');
+
+    if (expectedSignature.length !== computedSignature.length) {
+      return false;
+    }
+
+    const expectedBuf = Buffer.from(expectedSignature, 'hex');
+    const computedBuf = Buffer.from(computedSignature, 'hex');
+
+    if (expectedBuf.length !== computedBuf.length) {
+      return false;
+    }
+
+    return crypto.timingSafeEqual(expectedBuf, computedBuf);
+  } catch {
+    return false;
+  }
+}
+
+const EVENT_OPTIONS = [
+  {
+    name: 'Post Published',
+    value: 'post.published',
+    description: 'Triggered when a post is successfully published',
+  },
+  {
+    name: 'Post Scheduled',
+    value: 'post.scheduled',
+    description: 'Triggered when a post is scheduled',
+  },
+  {
+    name: 'Post Failed',
+    value: 'post.failed',
+    description: 'Triggered when a post fails to publish',
+  },
+  {
+    name: 'Post Deleted',
+    value: 'post.deleted',
+    description: 'Triggered when a scheduled post is deleted',
+  },
+  {
+    name: 'Post Dead Lettered',
+    value: 'post.dead_lettered',
+    description: 'Triggered when a post is moved to dead letter queue',
+  },
+  {
+    name: 'Account Connected',
+    value: 'account.connected',
+    description: 'Triggered when a social account is connected',
+  },
+  {
+    name: 'Account Disconnected',
+    value: 'account.disconnected',
+    description: 'Triggered when a social account is disconnected',
+  },
+  {
+    name: 'Mention Detected',
+    value: 'mention.detected',
+    description: 'Triggered when a monitored mention is detected',
+  },
+  {
+    name: 'Mention Negative Sentiment',
+    value: 'mention.negative_sentiment',
+    description: 'Triggered when negative sentiment is detected',
+  },
+  {
+    name: 'Team Member Joined',
+    value: 'team.member_joined',
+    description: 'Triggered when a member joins a team',
+  },
+  {
+    name: 'Team Member Left',
+    value: 'team.member_left',
+    description: 'Triggered when a member leaves a team',
+  },
+  {
+    name: 'Team Member Role Changed',
+    value: 'team.member_role_changed',
+    description: 'Triggered when a team member role changes',
+  },
+  {
+    name: 'Team Invitation Sent',
+    value: 'team.invitation_sent',
+    description: 'Triggered when a team invitation is sent',
+  },
+  {
+    name: 'Team Invitation Accepted',
+    value: 'team.invitation_accepted',
+    description: 'Triggered when a team invitation is accepted',
+  },
+  {
+    name: 'Team Invitation Declined',
+    value: 'team.invitation_declined',
+    description: 'Triggered when a team invitation is declined',
+  },
+  {
+    name: 'Approval Submitted',
+    value: 'approval.submitted',
+    description: 'Triggered when approval workflow starts',
+  },
+  {
+    name: 'Approval Step Approved',
+    value: 'approval.step_approved',
+    description: 'Triggered when an approval step is approved',
+  },
+  {
+    name: 'Approval Request Changes',
+    value: 'approval.request_changes',
+    description: 'Triggered when approval requests changes',
+  },
+  {
+    name: 'Approval Rejected',
+    value: 'approval.rejected',
+    description: 'Triggered when approval is rejected',
+  },
+  {
+    name: 'Analytics Anomaly Detected',
+    value: 'analytics.anomaly_detected',
+    description: 'Triggered when analytics anomaly is detected',
+  },
+  {
+    name: 'Account Token Expiring',
+    value: 'account.token_expiring',
+    description: 'Triggered when account token is near expiry',
+  },
+  {
+    name: 'Account Token Refresh Failed',
+    value: 'account.token_refresh_failed',
+    description: 'Triggered when account token refresh fails',
+  },
+  {
+    name: 'Account Reconnect Required',
+    value: 'account.reconnect_required',
+    description: 'Triggered when reconnect is required',
+  },
+  {
+    name: 'Account Refresh Recovered',
+    value: 'account.refresh_recovered',
+    description: 'Triggered when account refresh recovers',
+  },
+  {
+    name: 'Account Auth Recovery Completed',
+    value: 'account.auth_recovery_completed',
+    description: 'Triggered when auth recovery completes',
+  },
+  {
+    name: 'Security API Key Rotation Due',
+    value: 'security.api_key_rotation_due',
+    description: 'Triggered when API key rotation is due',
+  },
+  {
+    name: 'Audit Critical',
+    value: 'audit.critical',
+    description: 'Triggered on critical audit events',
+  },
+];
 
 export class SendItTrigger implements INodeType {
   description: INodeTypeDescription = {
@@ -14,7 +202,7 @@ export class SendItTrigger implements INodeType {
     icon: 'file:sendit.svg',
     group: ['trigger'],
     version: 1,
-    subtitle: '={{$parameter["event"]}}',
+    subtitle: '={{$parameter["customEvent"] || $parameter["event"]}}',
     description: 'Triggers when events occur in SendIt',
     defaults: {
       name: 'SendIt Trigger',
@@ -40,41 +228,17 @@ export class SendItTrigger implements INodeType {
         displayName: 'Event',
         name: 'event',
         type: 'options',
-        options: [
-          {
-            name: 'Post Published',
-            value: 'post.published',
-            description: 'Triggered when a post is successfully published',
-          },
-          {
-            name: 'Post Scheduled',
-            value: 'post.scheduled',
-            description: 'Triggered when a post is scheduled',
-          },
-          {
-            name: 'Post Failed',
-            value: 'post.failed',
-            description: 'Triggered when a post fails to publish',
-          },
-          {
-            name: 'Post Deleted',
-            value: 'post.deleted',
-            description: 'Triggered when a scheduled post is deleted',
-          },
-          {
-            name: 'Account Connected',
-            value: 'account.connected',
-            description: 'Triggered when a social account is connected',
-          },
-          {
-            name: 'Account Disconnected',
-            value: 'account.disconnected',
-            description: 'Triggered when a social account is disconnected',
-          },
-        ],
+        options: EVENT_OPTIONS,
         default: 'post.published',
         required: true,
-        description: 'The event to listen for',
+        description: 'The catalog event to listen for',
+      },
+      {
+        displayName: 'Custom Event',
+        name: 'customEvent',
+        type: 'string',
+        default: '',
+        description: 'Optional custom event string that overrides Event if set',
       },
     ],
   };
@@ -85,7 +249,6 @@ export class SendItTrigger implements INodeType {
         const webhookUrl = this.getNodeWebhookUrl('default');
         const webhookData = this.getWorkflowStaticData('node');
 
-        // If we have stored webhook data, check if it still exists
         if (webhookData.webhookId) {
           try {
             const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -93,36 +256,43 @@ export class SendItTrigger implements INodeType {
               'sendItApi',
               {
                 method: 'GET' as IHttpRequestMethods,
-                url: `https://sendit.infiniteappsai.com/api/v1/webhooks/${webhookData.webhookId}`,
+                baseURL: SENDIT_API_BASE_URL,
+                url: `/webhooks/${webhookData.webhookId}`,
               },
             );
+
             if (response && (response as { webhook?: { url?: string } }).webhook?.url === webhookUrl) {
               return true;
             }
           } catch {
-            // Webhook doesn't exist anymore
+            // Webhook does not exist anymore.
           }
         }
+
         return false;
       },
 
       async create(this: IHookFunctions): Promise<boolean> {
         const webhookUrl = this.getNodeWebhookUrl('default');
-        const event = this.getNodeParameter('event') as string;
+        const selectedEvent = this.getNodeParameter('event') as string;
+        const customEvent = this.getNodeParameter('customEvent') as string;
+        const event = customEvent.trim().length > 0 ? customEvent.trim() : selectedEvent;
         const webhookData = this.getWorkflowStaticData('node');
-
-        const body = {
-          url: webhookUrl,
-          events: [event],
-        };
 
         const response = await this.helpers.httpRequestWithAuthentication.call(
           this,
           'sendItApi',
           {
             method: 'POST' as IHttpRequestMethods,
-            url: 'https://sendit.infiniteappsai.com/api/v1/webhooks',
-            body,
+            baseURL: SENDIT_API_BASE_URL,
+            url: '/webhooks',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: webhookUrl,
+              events: [event],
+            }),
           },
         );
 
@@ -146,11 +316,12 @@ export class SendItTrigger implements INodeType {
               'sendItApi',
               {
                 method: 'DELETE' as IHttpRequestMethods,
-                url: `https://sendit.infiniteappsai.com/api/v1/webhooks/${webhookData.webhookId}`,
+                baseURL: SENDIT_API_BASE_URL,
+                url: `/webhooks/${webhookData.webhookId}`,
               },
             );
           } catch {
-            // Ignore errors during deletion
+            // Ignore deletion errors.
           }
 
           delete webhookData.webhookId;
@@ -163,12 +334,33 @@ export class SendItTrigger implements INodeType {
   };
 
   async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
+    const req = this.getRequestObject();
+    const webhookData = this.getWorkflowStaticData('node');
+    const secret = webhookData.webhookSecret as string | undefined;
+
+    const signature = req.headers['x-sendit-signature'] as string | undefined;
     const bodyData = this.getBodyData();
+    const rawBody = JSON.stringify(bodyData);
+
+    if (secret) {
+      if (!signature) {
+        throw new NodeOperationError(
+          this.getNode(),
+          'Missing X-SendIt-Signature header. Webhook request rejected.',
+        );
+      }
+
+      const isValid = verifyWebhookSignature(rawBody, signature, secret);
+      if (!isValid) {
+        throw new NodeOperationError(
+          this.getNode(),
+          'Invalid webhook signature. Request may be tampered with or expired.',
+        );
+      }
+    }
 
     return {
-      workflowData: [
-        this.helpers.returnJsonArray(bodyData),
-      ],
+      workflowData: [this.helpers.returnJsonArray(bodyData)],
     };
   }
 }
