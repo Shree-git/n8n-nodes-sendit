@@ -1,0 +1,247 @@
+{
+  "name": "SendIt Test 02 - Publish and Schedule Lifecycle",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const now = Date.now();\nconst scheduledTime = new Date(now + 2 * 60 * 60 * 1000).toISOString();\nconst runId = `n8n-lifecycle-${now}`;\nreturn [{\n  json: {\n    runId,\n    platforms: ['threads'],\n    publishText: `[${runId}] publish lifecycle smoke`,\n    scheduleText: `[${runId}] scheduled lifecycle smoke`,\n    scheduledTime,\n    platformFilter: 'threads',\n  },\n}];"
+      },
+      "id": "build_fixture",
+      "name": "Build Lifecycle Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "resource": "post",
+        "operation": "publish",
+        "platforms": "={{ $json.platforms }}",
+        "text": "={{ $json.publishText }}",
+        "mediaUrl": ""
+      },
+      "id": "sendit_publish",
+      "name": "SendIt - Publish",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [520, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Publish failed');\nreturn [{\n  json: {\n    passed: true,\n    scenario: 'publish_now',\n    payloadKeys: Object.keys(payload),\n  },\n}];"
+      },
+      "id": "assert_publish",
+      "name": "Assert Publish",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "resource": "scheduledPost",
+        "operation": "create",
+        "platforms": "={{ $node['Build Lifecycle Fixture'].json.platforms }}",
+        "text": "={{ $node['Build Lifecycle Fixture'].json.scheduleText }}",
+        "mediaUrl": "",
+        "scheduledTime": "={{ $node['Build Lifecycle Fixture'].json.scheduledTime }}"
+      },
+      "id": "sendit_schedule_create",
+      "name": "SendIt - Schedule Create",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1040, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Schedule create failed');\nconst scheduleId = payload.scheduleId || payload.id || payload.scheduledPost?.id || payload.post?.id || payload.data?.scheduleId || payload.data?.id;\nif (!scheduleId) {\n  throw new Error(`Missing schedule ID in schedule create payload: ${JSON.stringify(payload)}`);\n}\nreturn [{ json: { scenario: 'schedule_create', passed: true, scheduleId } }];"
+      },
+      "id": "assert_schedule_create",
+      "name": "Assert Schedule Create",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 0]
+    },
+    {
+      "parameters": {
+        "resource": "scheduledPost",
+        "operation": "getAll",
+        "platformFilter": "={{ $node['Build Lifecycle Fixture'].json.platformFilter }}"
+      },
+      "id": "sendit_schedule_list",
+      "name": "SendIt - Schedule List",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1560, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Schedule list failed');\nconst posts = Array.isArray(payload.posts) ? payload.posts : Array.isArray(payload.scheduledPosts) ? payload.scheduledPosts : [];\nreturn [{ json: { scenario: 'schedule_list', passed: true, listedCount: posts.length } }];"
+      },
+      "id": "assert_schedule_list",
+      "name": "Assert Schedule List",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1820, 0]
+    },
+    {
+      "parameters": {
+        "resource": "scheduledPost",
+        "operation": "trigger",
+        "scheduleId": "={{ $node['Assert Schedule Create'].json.scheduleId }}"
+      },
+      "id": "sendit_schedule_trigger",
+      "name": "SendIt - Schedule Trigger",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [2080, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Schedule trigger failed');\nreturn [{ json: { scenario: 'schedule_trigger', passed: true, payloadKeys: Object.keys(payload) } }];"
+      },
+      "id": "assert_schedule_trigger",
+      "name": "Assert Schedule Trigger",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2340, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Build Lifecycle Fixture",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Lifecycle Fixture": {
+      "main": [
+        [
+          {
+            "node": "SendIt - Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendIt - Publish": {
+      "main": [
+        [
+          {
+            "node": "Assert Publish",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Publish": {
+      "main": [
+        [
+          {
+            "node": "SendIt - Schedule Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendIt - Schedule Create": {
+      "main": [
+        [
+          {
+            "node": "Assert Schedule Create",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Schedule Create": {
+      "main": [
+        [
+          {
+            "node": "SendIt - Schedule List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendIt - Schedule List": {
+      "main": [
+        [
+          {
+            "node": "Assert Schedule List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Schedule List": {
+      "main": [
+        [
+          {
+            "node": "SendIt - Schedule Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendIt - Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Assert Schedule Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
