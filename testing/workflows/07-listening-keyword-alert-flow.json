@@ -1,0 +1,113 @@
+{
+  "name": "SendIt Test 07 - Listening Keyword and Alert Flow",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "resource": "listening",
+        "operation": "listKeywords",
+        "listeningActiveOnly": true,
+        "listeningKeywordType": "brand"
+      },
+      "id": "list_keywords",
+      "name": "SendIt - Listening List Keywords",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [240, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "listening",
+        "operation": "listMentions",
+        "listeningMentionPlatform": "threads",
+        "listeningSentimentFilter": "",
+        "listeningIsRead": "",
+        "listeningIsArchived": "false",
+        "listeningLimit": 20,
+        "listeningOffset": 0,
+        "listeningSince": ""
+      },
+      "id": "list_mentions",
+      "name": "SendIt - Listening List Mentions",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [500, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "listening",
+        "operation": "listAlerts",
+        "listeningAlertsUnreadOnly": true,
+        "listeningAlertPriority": "",
+        "listeningLimit": 20
+      },
+      "id": "list_alerts",
+      "name": "SendIt - Listening List Alerts",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [760, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "listening",
+        "operation": "getSummary"
+      },
+      "id": "get_summary",
+      "name": "SendIt - Listening Summary",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1020, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "SendIt - Listening List Keywords", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Listening List Keywords": {
+      "main": [[{ "node": "SendIt - Listening List Mentions", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Listening List Mentions": {
+      "main": [[{ "node": "SendIt - Listening List Alerts", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Listening List Alerts": {
+      "main": [[{ "node": "SendIt - Listening Summary", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
