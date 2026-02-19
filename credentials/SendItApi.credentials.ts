@@ -20,7 +20,7 @@ export class SendItApi implements ICredentialType {
       default: '',
       required: true,
       placeholder: 'sk_live_your_api_key_here',
-      description: 'Your SendIt API key. Get it from Dashboard → API Keys → Create New Key. Format: sk_live_...',
+      description: 'Your SendIt API key. Get it from Dashboard → API Keys → Create New Key. Format: sk_live_... Restricted-scope keys are supported; operations requiring unavailable scopes will return API errors when executed.',
     },
   ];
 
@@ -36,7 +36,10 @@ export class SendItApi implements ICredentialType {
   test: ICredentialTestRequest = {
     request: {
       baseURL: 'https://sendit.infiniteappsai.com/api/v1',
-      url: '/accounts',
+      url: '/inbox',
+      qs: {
+        limit: 1,
+      },
     },
   };
 }
