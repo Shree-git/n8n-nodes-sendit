@@ -1,0 +1,148 @@
+{
+  "name": "SendIt Test 05 - Library Lifecycle",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const runId = Date.now();\nreturn [{\n  json: {\n    runId,\n    title: `n8n-lib-${runId}`,\n    text: `Library test content ${runId}`,\n  },\n}];"
+      },
+      "id": "fixture",
+      "name": "Build Library Fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
+    },
+    {
+      "parameters": {
+        "resource": "library",
+        "operation": "create",
+        "libraryTitle": "={{ $json.title }}",
+        "libraryText": "={{ $json.text }}",
+        "libraryType": "template",
+        "libraryCategory": "automation",
+        "libraryTags": "n8n,sendit",
+        "libraryTargetPlatforms": ["linkedin", "x"],
+        "libraryEvergreenEnabled": false,
+        "libraryEvergreenIntervalDays": 0,
+        "libraryEvergreenMaxPublishes": 0
+      },
+      "id": "library_create",
+      "name": "SendIt - Library Create",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [520, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const payload = $input.first().json;\nif (payload.success === false) throw new Error(payload.error || 'Library create failed');\nconst id = payload.item?.id || payload.id || payload.data?.item?.id || payload.data?.id;\nif (!id) throw new Error(`Missing library item id in payload: ${JSON.stringify(payload)}`);\nreturn [{ json: { itemId: id, passed: true, scenario: 'library_create' } }];"
+      },
+      "id": "assert_create",
+      "name": "Assert Library Create",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [780, 0]
+    },
+    {
+      "parameters": {
+        "resource": "library",
+        "operation": "get",
+        "libraryItemId": "={{ $json.itemId }}"
+      },
+      "id": "library_get",
+      "name": "SendIt - Library Get",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1040, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "library",
+        "operation": "update",
+        "libraryItemId": "={{ $node['Assert Library Create'].json.itemId }}",
+        "libraryTitle": "={{ `updated-${$node['Build Library Fixture'].json.title}` }}",
+        "libraryText": "={{ `updated-${$node['Build Library Fixture'].json.text}` }}",
+        "libraryType": "draft",
+        "libraryCategory": "automation",
+        "libraryTags": "n8n,sendit,updated",
+        "libraryTargetPlatforms": ["threads"],
+        "libraryEvergreenEnabled": false,
+        "libraryEvergreenIntervalDays": 0,
+        "libraryEvergreenMaxPublishes": 0
+      },
+      "id": "library_update",
+      "name": "SendIt - Library Update",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1300, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "library",
+        "operation": "delete",
+        "libraryItemId": "={{ $node['Assert Library Create'].json.itemId }}"
+      },
+      "id": "library_delete",
+      "name": "SendIt - Library Delete",
+      "type": "n8n-nodes-sendit.sendIt",
+      "typeVersion": 1,
+      "position": [1560, 0],
+      "credentials": {
+        "sendItApi": {
+          "id": "",
+          "name": "SendIt API"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "Build Library Fixture", "type": "main", "index": 0 }]]
+    },
+    "Build Library Fixture": {
+      "main": [[{ "node": "SendIt - Library Create", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Library Create": {
+      "main": [[{ "node": "Assert Library Create", "type": "main", "index": 0 }]]
+    },
+    "Assert Library Create": {
+      "main": [[{ "node": "SendIt - Library Get", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Library Get": {
+      "main": [[{ "node": "SendIt - Library Update", "type": "main", "index": 0 }]]
+    },
+    "SendIt - Library Update": {
+      "main": [[{ "node": "SendIt - Library Delete", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
