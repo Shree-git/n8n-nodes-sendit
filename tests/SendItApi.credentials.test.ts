@@ -20,8 +20,7 @@ describe("SendItApi credentials", () => {
 
     expect(credentials.test.request).toEqual({
       baseURL: "https://sendit.infiniteappsai.com/api/v1",
-      url: "/inbox",
-      qs: { limit: 1 },
+      url: "/capabilities",
     });
   });
 });

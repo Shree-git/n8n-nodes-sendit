@@ -3,182 +3,12 @@ import {
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
-  IHttpRequestMethods,
-  IDataObject,
   NodeOperationError,
 } from 'n8n-workflow';
 
-const SENDIT_API_ORIGIN = 'https://sendit.infiniteappsai.com';
-const SENDIT_API_BASE_URL = `${SENDIT_API_ORIGIN}/api/v1`;
-
-const PLATFORM_OPTIONS = [
-  { name: 'X (Twitter)', value: 'x' },
-  { name: 'LinkedIn', value: 'linkedin' },
-  { name: 'LinkedIn Page', value: 'linkedin-page' },
-  { name: 'Facebook', value: 'facebook' },
-  { name: 'Instagram', value: 'instagram' },
-  { name: 'Instagram Standalone', value: 'instagram-standalone' },
-  { name: 'Threads', value: 'threads' },
-  { name: 'Bluesky', value: 'bluesky' },
-  { name: 'Mastodon', value: 'mastodon' },
-  { name: 'Warpcast', value: 'warpcast' },
-  { name: 'Nostr', value: 'nostr' },
-  { name: 'VK', value: 'vk' },
-  { name: 'YouTube', value: 'youtube' },
-  { name: 'TikTok', value: 'tiktok' },
-  { name: 'Reddit', value: 'reddit' },
-  { name: 'Lemmy', value: 'lemmy' },
-  { name: 'Discord', value: 'discord' },
-  { name: 'Slack', value: 'slack' },
-  { name: 'Telegram', value: 'telegram' },
-  { name: 'Pinterest', value: 'pinterest' },
-  { name: 'Dribbble', value: 'dribbble' },
-  { name: 'Medium', value: 'medium' },
-  { name: 'DEV.to', value: 'devto' },
-  { name: 'Hashnode', value: 'hashnode' },
-  { name: 'WordPress', value: 'wordpress' },
-  { name: 'Google My Business', value: 'gmb' },
-  { name: 'Listmonk', value: 'listmonk' },
-  { name: 'Skool', value: 'skool' },
-  { name: 'Whop', value: 'whop' },
-  { name: 'Kick', value: 'kick' },
-  { name: 'Twitch', value: 'twitch' },
-  { name: 'Product Hunt', value: 'producthunt' },
-];
-
-function getOptionalString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
-function buildOptionalHeaders(teamId?: string, idempotencyKey?: string): Record<string, string> {
-  const headers: Record<string, string> = {};
-  if (teamId) {
-    headers['X-Team-ID'] = teamId;
-  }
-  if (idempotencyKey) {
-    headers['Idempotency-Key'] = idempotencyKey;
-  }
-  return headers;
-}
-
-function parseCsvList(value: string | undefined): string[] | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const parsed = value
-    .split(',')
-    .map((entry) => entry.trim())
-    .filter((entry) => entry.length > 0);
-  return parsed.length > 0 ? parsed : undefined;
-}
-
-function maybeArray(value: unknown): string[] | undefined {
-  if (Array.isArray(value)) {
-    const normalized = value
-      .map((item) => (typeof item === 'string' ? item.trim() : String(item)))
-      .filter((item) => item.length > 0);
-    return normalized.length > 0 ? normalized : undefined;
-  }
-
-  if (typeof value === 'string') {
-    return parseCsvList(value);
-  }
-
-  return undefined;
-}
-
-function parseJsonInput(value: string | undefined, label: string): unknown {
-  if (!value || value.trim().length === 0) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch {
-    throw new Error(`${label} must be valid JSON`);
-  }
-}
-
-function normalizeResponse(response: unknown): IDataObject {
-  if (response === null || response === undefined) {
-    return {};
-  }
-
-  if (Buffer.isBuffer(response)) {
-    return {
-      dataBase64: response.toString('base64'),
-      byteLength: response.length,
-    };
-  }
-
-  if (typeof response === 'string') {
-    return { data: response };
-  }
-
-  if (typeof response !== 'object') {
-    return { data: response as string | number | boolean };
-  }
-
-  return response as IDataObject;
-}
-
-async function requestV1(
-  context: IExecuteFunctions,
-  request: { url: string; [key: string]: unknown },
-  optionalHeaders: Record<string, string>,
-): Promise<unknown> {
-  const requestHeaders = (request.headers as Record<string, string> | undefined) ?? {};
-  const headers = {
-    ...requestHeaders,
-    ...optionalHeaders,
-  };
-
-  return context.helpers.httpRequestWithAuthentication.call(
-    context,
-    'sendItApi',
-    {
-      baseURL: SENDIT_API_BASE_URL,
-      ...request,
-      headers: Object.keys(headers).length > 0 ? headers : undefined,
-    } as any,
-  );
-}
-
-async function requestAbsolute(
-  context: IExecuteFunctions,
-  request: { url: string; [key: string]: unknown },
-  optionalHeaders: Record<string, string>,
-): Promise<unknown> {
-  const requestHeaders = (request.headers as Record<string, string> | undefined) ?? {};
-  const headers = {
-    ...requestHeaders,
-    ...optionalHeaders,
-  };
-
-  return context.helpers.httpRequestWithAuthentication.call(
-    context,
-    'sendItApi',
-    {
-      baseURL: SENDIT_API_ORIGIN,
-      ...request,
-      headers: Object.keys(headers).length > 0 ? headers : undefined,
-    } as any,
-  );
-}
-
-function assertObject(
-  value: unknown,
-  message: string,
-): Record<string, unknown> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(message);
-  }
-  return value as Record<string, unknown>;
-}
+import { SENDIT_API_BASE_URL, PLATFORM_OPTIONS } from './constants';
+import { getOptionalString, buildOptionalHeaders, normalizeResponse } from './helpers';
+import { RESOURCE_HANDLERS } from './handlers';
 
 export class SendIt implements INodeType {
   description: INodeTypeDescription = {
@@ -233,6 +63,9 @@ export class SendIt implements INodeType {
           { name: 'Bulk Schedule', value: 'bulkSchedule' },
           { name: 'Connect', value: 'connect' },
           { name: 'Webhooks', value: 'webhooks' },
+          { name: 'Dead Letter', value: 'deadLetter' },
+          { name: 'Audit Log', value: 'auditLog' },
+          { name: 'Conversions', value: 'conversions' },
           { name: 'Advanced', value: 'advanced' },
         ],
         default: 'post',
@@ -273,6 +106,9 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['ai'] } },
         options: [
           { name: 'Generate Content', value: 'generate', description: 'Generate platform-specific content from media or prompt', action: 'Generate AI content' },
+          { name: 'Reply Suggestions', value: 'replySuggestions', description: 'Get AI-drafted reply suggestions for a mention', action: 'Get AI reply suggestions' },
+          { name: 'Mention Summary', value: 'mentionSummary', description: 'Generate an AI summary of recent mentions', action: 'Summarize mentions with AI' },
+          { name: 'Feedback', value: 'feedback', description: 'Rate AI-generated content quality', action: 'Submit AI feedback' },
         ],
         default: 'generate',
       },
@@ -337,6 +173,9 @@ export class SendIt implements INodeType {
         options: [
           { name: 'Create', value: 'create', description: 'Create a new brand voice profile', action: 'Create a brand voice' },
           { name: 'List', value: 'list', description: 'List all brand voice profiles', action: 'List brand voices' },
+          { name: 'Get', value: 'get', description: 'Get a single brand voice profile', action: 'Get a brand voice' },
+          { name: 'Update', value: 'update', description: 'Update a brand voice profile', action: 'Update a brand voice' },
+          { name: 'Delete', value: 'delete', description: 'Delete a brand voice profile', action: 'Delete a brand voice' },
         ],
         default: 'create',
       },
@@ -410,12 +249,12 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['meta'] } },
         options: [
-          { name: 'Get Capabilities', value: 'getCapabilities', action: 'Get capabilities' },
-          { name: 'Get Requirements', value: 'getRequirements', action: 'Get platform requirements' },
-          { name: 'Get Platform Settings Schema', value: 'getPlatformSettingsSchema', action: 'Get platform settings schema' },
-          { name: 'Get Best Times', value: 'getBestTimes', action: 'Get best times to post' },
-          { name: 'Get Webhook Events Catalog', value: 'getWebhookEventsCatalog', action: 'Get webhook events catalog' },
-          { name: 'Get Webhook Triggers', value: 'getWebhookTriggers', action: 'Get webhook triggers' },
+          { name: 'Get Capabilities', value: 'getCapabilities', description: 'Get supported platform capabilities', action: 'Get capabilities' },
+          { name: 'Get Requirements', value: 'getRequirements', description: 'Get content requirements for a platform', action: 'Get platform requirements' },
+          { name: 'Get Platform Settings Schema', value: 'getPlatformSettingsSchema', description: 'Get the settings schema for a platform', action: 'Get platform settings schema' },
+          { name: 'Get Best Times', value: 'getBestTimes', description: 'Get optimal posting times for a platform', action: 'Get best times to post' },
+          { name: 'Get Webhook Events Catalog', value: 'getWebhookEventsCatalog', description: 'Get all available webhook event types', action: 'Get webhook events catalog' },
+          { name: 'Get Webhook Triggers', value: 'getWebhookTriggers', description: 'Get configured webhook trigger schemas', action: 'Get webhook triggers' },
         ],
         default: 'getCapabilities',
       },
@@ -425,7 +264,7 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['contentScore'] } },
-        options: [{ name: 'Score', value: 'score', action: 'Score content quality' }],
+        options: [{ name: 'Score', value: 'score', description: 'Score content quality across platforms', action: 'Score content quality' }],
         default: 'score',
       },
       {
@@ -492,8 +331,48 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['webhooks'] } },
-        options: [{ name: 'Test Webhook', value: 'testWebhook', action: 'Send a test webhook delivery' }],
-        default: 'testWebhook',
+        options: [
+          { name: 'List', value: 'list', description: 'List all registered webhooks', action: 'List webhooks' },
+          { name: 'Get', value: 'get', description: 'Get a webhook by ID', action: 'Get webhook' },
+          { name: 'Update', value: 'update', description: 'Update a webhook subscription', action: 'Update webhook' },
+          { name: 'Test Webhook', value: 'testWebhook', description: 'Send a test delivery to a webhook', action: 'Send a test webhook delivery' },
+        ],
+        default: 'list',
+      },
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: { show: { resource: ['deadLetter'] } },
+        options: [
+          { name: 'List', value: 'list', description: 'List posts in the dead letter queue', action: 'List dead letter posts' },
+          { name: 'Requeue', value: 'requeue', description: 'Retry a failed post from the dead letter queue', action: 'Requeue dead letter post' },
+          { name: 'Discard', value: 'discard', description: 'Permanently discard a dead letter post', action: 'Discard dead letter post' },
+        ],
+        default: 'list',
+      },
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: { show: { resource: ['auditLog'] } },
+        options: [
+          { name: 'List', value: 'list', description: 'List audit log entries', action: 'List audit log entries' },
+        ],
+        default: 'list',
+      },
+      {
+        displayName: 'Operation',
+        name: 'operation',
+        type: 'options',
+        noDataExpression: true,
+        displayOptions: { show: { resource: ['conversions'] } },
+        options: [
+          { name: 'Track', value: 'track', description: 'Track a conversion event', action: 'Track conversion' },
+        ],
+        default: 'track',
       },
       {
         displayName: 'Operation',
@@ -505,7 +384,7 @@ export class SendIt implements INodeType {
         default: 'apiRequest',
       },
 
-      // ===== Existing publish / schedule fields =====
+      // ===== Shared publish / schedule fields =====
       {
         displayName: 'Platforms',
         name: 'platforms',
@@ -782,14 +661,77 @@ export class SendIt implements INodeType {
         ],
       },
 
-      // ===== Existing brand voice / campaign / inbox / listening / ai media fields =====
+      // ===== Pagination for list operations =====
+      {
+        displayName: 'Limit',
+        name: 'accountLimit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 100 },
+        default: 50,
+        displayOptions: { show: { resource: ['account'], operation: ['getAll'] } },
+        description: 'Maximum number of accounts to return',
+      },
+      {
+        displayName: 'Limit',
+        name: 'campaignLimit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 100 },
+        default: 50,
+        displayOptions: { show: { resource: ['campaign'], operation: ['list'] } },
+        description: 'Maximum number of campaigns to return',
+      },
+      {
+        displayName: 'Offset',
+        name: 'campaignOffset',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['campaign'], operation: ['list'] } },
+        description: 'Offset for pagination',
+      },
+      {
+        displayName: 'Limit',
+        name: 'approvalLimit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 100 },
+        default: 50,
+        displayOptions: { show: { resource: ['approvals'], operation: ['list'] } },
+        description: 'Maximum number of approvals to return',
+      },
+      {
+        displayName: 'Offset',
+        name: 'approvalOffset',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['approvals'], operation: ['list'] } },
+        description: 'Offset for pagination',
+      },
+      {
+        displayName: 'Limit',
+        name: 'brandVoiceLimit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 100 },
+        default: 50,
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['list'] } },
+        description: 'Maximum number of brand voices to return',
+      },
+
+      // ===== Brand voice fields =====
+      {
+        displayName: 'Brand Voice ID',
+        name: 'brandVoiceId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['get', 'update', 'delete'] } },
+        description: 'The ID of the brand voice profile',
+      },
       {
         displayName: 'Name',
         name: 'brandVoiceName',
         type: 'string',
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Name for the brand voice profile',
       },
       {
@@ -798,7 +740,7 @@ export class SendIt implements INodeType {
         type: 'string',
         typeOptions: { rows: 3 },
         default: '',
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Description of the brand voice',
       },
       {
@@ -806,7 +748,7 @@ export class SendIt implements INodeType {
         name: 'brandVoiceTone',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Tone of voice (e.g. professional, casual, witty)',
       },
       {
@@ -814,7 +756,7 @@ export class SendIt implements INodeType {
         name: 'brandVoiceVocabulary',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Comma-separated preferred vocabulary words',
       },
       {
@@ -822,7 +764,7 @@ export class SendIt implements INodeType {
         name: 'brandVoiceBannedWords',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Comma-separated words to avoid',
       },
       {
@@ -830,9 +772,11 @@ export class SendIt implements INodeType {
         name: 'brandVoiceIsDefault',
         type: 'boolean',
         default: false,
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['create'] } },
+        displayOptions: { show: { resource: ['brandVoice'], operation: ['create', 'update'] } },
         description: 'Whether this is the default brand voice',
       },
+
+      // ===== Campaign fields =====
       {
         displayName: 'Objective',
         name: 'campaignObjective',
@@ -895,6 +839,8 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['campaign'], operation: ['schedule'] } },
         description: 'The ID of the campaign to schedule',
       },
+
+      // ===== Inbox fields =====
       {
         displayName: 'Platform Filter',
         name: 'inboxPlatformFilter',
@@ -967,6 +913,8 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['inbox'], operation: ['updateStatus'] } },
         description: 'Updated status for thread',
       },
+
+      // ===== Listening fields =====
       {
         displayName: 'Platforms',
         name: 'listeningPlatforms',
@@ -986,12 +934,7 @@ export class SendIt implements INodeType {
         name: 'listeningKeywordIds',
         type: 'string',
         default: '',
-        displayOptions: {
-          show: {
-            resource: ['listening'],
-            operation: ['refresh'],
-          },
-        },
+        displayOptions: { show: { resource: ['listening'], operation: ['refresh'] } },
         description: 'Comma-separated keyword IDs to refresh',
       },
       {
@@ -1014,12 +957,7 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['listening'],
-            operation: ['createKeyword'],
-          },
-        },
+        displayOptions: { show: { resource: ['listening'], operation: ['createKeyword'] } },
         description: 'Keyword text to monitor',
       },
       {
@@ -1210,6 +1148,8 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['listening'], operation: ['markAlertsRead', 'dismissAlerts'] } },
         description: 'Comma-separated alert IDs',
       },
+
+      // ===== AI Media fields =====
       {
         displayName: 'Provider',
         name: 'aiMediaProvider',
@@ -1265,7 +1205,7 @@ export class SendIt implements INodeType {
         description: 'The ID of the AI media generation job',
       },
 
-      // ===== New Meta fields =====
+      // ===== Meta fields =====
       {
         displayName: 'Platform',
         name: 'metaPlatform',
@@ -1286,12 +1226,7 @@ export class SendIt implements INodeType {
         name: 'metaBestTimesLimit',
         type: 'number',
         default: 5,
-        displayOptions: {
-          show: {
-            resource: ['meta'],
-            operation: ['getBestTimes'],
-          },
-        },
+        displayOptions: { show: { resource: ['meta'], operation: ['getBestTimes'] } },
         description: 'Maximum best-time recommendations to return',
       },
 
@@ -1320,12 +1255,7 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['get', 'update', 'delete'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['get', 'update', 'delete'] } },
         description: 'Library item ID',
       },
       {
@@ -1334,12 +1264,7 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
         description: 'Library item title',
       },
       {
@@ -1349,12 +1274,7 @@ export class SendIt implements INodeType {
         typeOptions: { rows: 4 },
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
         description: 'Library item text body',
       },
       {
@@ -1367,12 +1287,7 @@ export class SendIt implements INodeType {
           { name: 'Evergreen', value: 'evergreen' },
         ],
         default: 'draft',
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['list', 'create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
         description: 'Library content type',
       },
       {
@@ -1380,12 +1295,7 @@ export class SendIt implements INodeType {
         name: 'libraryCategory',
         type: 'string',
         default: '',
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['list', 'create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
         description: 'Library category',
       },
       {
@@ -1393,12 +1303,7 @@ export class SendIt implements INodeType {
         name: 'libraryTags',
         type: 'string',
         default: '',
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['list', 'create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
         description: 'Comma-separated tags',
       },
       {
@@ -1407,12 +1312,7 @@ export class SendIt implements INodeType {
         type: 'multiOptions',
         options: PLATFORM_OPTIONS,
         default: [],
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['list', 'create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
         description: 'Target platforms for this library item',
       },
       {
@@ -1444,12 +1344,7 @@ export class SendIt implements INodeType {
         name: 'libraryEvergreenEnabled',
         type: 'boolean',
         default: false,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
         description: 'Enable evergreen republishing',
       },
       {
@@ -1457,12 +1352,7 @@ export class SendIt implements INodeType {
         name: 'libraryEvergreenIntervalDays',
         type: 'number',
         default: 0,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
         description: 'Optional evergreen interval days',
       },
       {
@@ -1470,12 +1360,7 @@ export class SendIt implements INodeType {
         name: 'libraryEvergreenMaxPublishes',
         type: 'number',
         default: 0,
-        displayOptions: {
-          show: {
-            resource: ['library'],
-            operation: ['create', 'update'],
-          },
-        },
+        displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
         description: 'Optional max evergreen publish count',
       },
 
@@ -1486,12 +1371,7 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['approvals'],
-            operation: ['approve', 'reject'],
-          },
-        },
+        displayOptions: { show: { resource: ['approvals'], operation: ['approve', 'reject'] } },
         description: 'Scheduled post ID in approvals queue',
       },
       {
@@ -1499,12 +1379,7 @@ export class SendIt implements INodeType {
         name: 'approvalComment',
         type: 'string',
         default: '',
-        displayOptions: {
-          show: {
-            resource: ['approvals'],
-            operation: ['approve'],
-          },
-        },
+        displayOptions: { show: { resource: ['approvals'], operation: ['approve'] } },
         description: 'Optional approval comment',
       },
       {
@@ -1513,12 +1388,7 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['approvals'],
-            operation: ['reject'],
-          },
-        },
+        displayOptions: { show: { resource: ['approvals'], operation: ['reject'] } },
         description: 'Required rejection reason',
       },
 
@@ -1539,12 +1409,7 @@ export class SendIt implements INodeType {
         typeOptions: { rows: 6 },
         default: '',
         required: true,
-        displayOptions: {
-          show: {
-            resource: ['bulkSchedule'],
-            operation: ['validateCsv', 'importCsv'],
-          },
-        },
+        displayOptions: { show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] } },
         description: 'Raw CSV string payload',
       },
       {
@@ -1552,12 +1417,7 @@ export class SendIt implements INodeType {
         name: 'bulkFilename',
         type: 'string',
         default: 'upload.csv',
-        displayOptions: {
-          show: {
-            resource: ['bulkSchedule'],
-            operation: ['validateCsv', 'importCsv'],
-          },
-        },
+        displayOptions: { show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] } },
         description: 'CSV filename for import metadata',
       },
       {
@@ -1609,15 +1469,253 @@ export class SendIt implements INodeType {
         description: 'Optional JSON metadata object',
       },
 
-      // ===== Webhook helper fields =====
+      // ===== Webhook fields =====
       {
         displayName: 'Webhook ID',
         name: 'webhookId',
         type: 'string',
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['webhooks'], operation: ['testWebhook'] } },
-        description: 'Webhook subscription ID to test',
+        displayOptions: { show: { resource: ['webhooks'], operation: ['get', 'update', 'testWebhook'] } },
+        description: 'Webhook subscription ID',
+      },
+      {
+        displayName: 'Webhook URL',
+        name: 'webhookUpdateUrl',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['webhooks'], operation: ['update'] } },
+        description: 'New URL for the webhook endpoint',
+      },
+      {
+        displayName: 'Webhook Events',
+        name: 'webhookUpdateEvents',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['webhooks'], operation: ['update'] } },
+        description: 'Comma-separated event types to subscribe to',
+      },
+      {
+        displayName: 'Active',
+        name: 'webhookUpdateActive',
+        type: 'boolean',
+        default: true,
+        displayOptions: { show: { resource: ['webhooks'], operation: ['update'] } },
+        description: 'Whether the webhook subscription is active',
+      },
+
+      // ===== Dead letter fields =====
+      {
+        displayName: 'Status Filter',
+        name: 'deadLetterStatus',
+        type: 'options',
+        options: [
+          { name: 'All Statuses', value: '' },
+          { name: 'Dead', value: 'dead' },
+          { name: 'Requeued', value: 'requeued' },
+          { name: 'Discarded', value: 'discarded' },
+        ],
+        default: '',
+        displayOptions: { show: { resource: ['deadLetter'], operation: ['list'] } },
+        description: 'Filter dead letter posts by status',
+      },
+      {
+        displayName: 'Limit',
+        name: 'deadLetterLimit',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 100 },
+        default: 50,
+        displayOptions: { show: { resource: ['deadLetter'], operation: ['list'] } },
+        description: 'Maximum number of dead letter posts to return',
+      },
+      {
+        displayName: 'Dead Letter ID',
+        name: 'deadLetterId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['deadLetter'], operation: ['requeue', 'discard'] } },
+        description: 'The ID of the dead letter post',
+      },
+
+      // ===== Audit log fields =====
+      {
+        displayName: 'Action Filter',
+        name: 'auditAction',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Filter by audit action type',
+      },
+      {
+        displayName: 'Resource Type Filter',
+        name: 'auditResourceType',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Filter by resource type',
+      },
+      {
+        displayName: 'Start Date',
+        name: 'auditStartDate',
+        type: 'dateTime',
+        default: '',
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Filter entries from this date',
+      },
+      {
+        displayName: 'End Date',
+        name: 'auditEndDate',
+        type: 'dateTime',
+        default: '',
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Filter entries until this date',
+      },
+      {
+        displayName: 'Limit',
+        name: 'auditLimit',
+        type: 'number',
+        default: 50,
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Maximum number of audit log entries to return',
+      },
+      {
+        displayName: 'Offset',
+        name: 'auditOffset',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['auditLog'], operation: ['list'] } },
+        description: 'Offset for pagination',
+      },
+
+      // ===== Conversions fields =====
+      {
+        displayName: 'Tracked Link ID',
+        name: 'conversionTrackedLinkId',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['conversions'], operation: ['track'] } },
+        description: 'Tracked link ID for the conversion',
+      },
+      {
+        displayName: 'Short Code',
+        name: 'conversionShortCode',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['conversions'], operation: ['track'] } },
+        description: 'Short code for the tracked link',
+      },
+      {
+        displayName: 'Conversion Type',
+        name: 'conversionType',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['conversions'], operation: ['track'] } },
+        description: 'Type of conversion (e.g. signup, purchase)',
+      },
+      {
+        displayName: 'Value',
+        name: 'conversionValue',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['conversions'], operation: ['track'] } },
+        description: 'Monetary value of the conversion',
+      },
+      {
+        displayName: 'Metadata JSON',
+        name: 'conversionMetadataJson',
+        type: 'string',
+        typeOptions: { rows: 4 },
+        default: '',
+        displayOptions: { show: { resource: ['conversions'], operation: ['track'] } },
+        description: 'Optional JSON metadata for the conversion',
+      },
+
+      // ===== AI auxiliary fields =====
+      {
+        displayName: 'Mention ID',
+        name: 'aiMentionId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['ai'], operation: ['replySuggestions'] } },
+        description: 'The mention ID to generate reply suggestions for',
+      },
+      {
+        displayName: 'Tone',
+        name: 'aiTone',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['replySuggestions'] } },
+        description: 'Optional tone for reply suggestions',
+      },
+      {
+        displayName: 'Max Length',
+        name: 'aiMaxLength',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['ai'], operation: ['replySuggestions'] } },
+        description: 'Maximum character length for suggestions',
+      },
+      {
+        displayName: 'Since',
+        name: 'aiSummarySince',
+        type: 'dateTime',
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['mentionSummary'] } },
+        description: 'Summarize mentions since this timestamp',
+      },
+      {
+        displayName: 'Platform',
+        name: 'aiSummaryPlatform',
+        type: 'options',
+        options: [{ name: 'All', value: '' }, ...PLATFORM_OPTIONS],
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['mentionSummary'] } },
+        description: 'Filter mentions by platform for summary',
+      },
+      {
+        displayName: 'Keyword ID',
+        name: 'aiSummaryKeywordId',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['mentionSummary'] } },
+        description: 'Filter mentions by keyword ID for summary',
+      },
+      {
+        displayName: 'Summary Limit',
+        name: 'aiSummaryLimit',
+        type: 'number',
+        default: 0,
+        displayOptions: { show: { resource: ['ai'], operation: ['mentionSummary'] } },
+        description: 'Maximum mentions to include in summary',
+      },
+      {
+        displayName: 'Log ID',
+        name: 'aiLogId',
+        type: 'string',
+        default: '',
+        required: true,
+        displayOptions: { show: { resource: ['ai'], operation: ['feedback'] } },
+        description: 'AI generation log ID to rate',
+      },
+      {
+        displayName: 'Rating',
+        name: 'aiRating',
+        type: 'number',
+        typeOptions: { minValue: 1, maxValue: 5 },
+        default: 3,
+        required: true,
+        displayOptions: { show: { resource: ['ai'], operation: ['feedback'] } },
+        description: 'Rating from 1 (poor) to 5 (excellent)',
+      },
+      {
+        displayName: 'Notes',
+        name: 'aiNotes',
+        type: 'string',
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['feedback'] } },
+        description: 'Optional feedback notes',
       },
 
       // ===== Advanced fields =====
@@ -1682,7 +1780,8 @@ export class SendIt implements INodeType {
         name: 'requestTimeoutMs',
         type: 'number',
         default: 30000,
-        description: 'Optional timeout. Applied by advanced API request operation',
+        displayOptions: { show: { resource: ['advanced'], operation: ['apiRequest'] } },
+        description: 'Request timeout in milliseconds',
       },
     ],
   };
@@ -1699,1129 +1798,12 @@ export class SendIt implements INodeType {
         const idempotencyKey = getOptionalString(this.getNodeParameter('idempotencyKey', i) as string);
         const optionalHeaders = buildOptionalHeaders(teamId, idempotencyKey);
 
-        let response: unknown = {};
-
-        if (resource === 'post') {
-          if (operation === 'publish') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const text = this.getNodeParameter('text', i) as string;
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const additionalOptions = this.getNodeParameter('additionalOptions', i) as {
-              mediaUrls?: string;
-              mediaType?: string;
-              facebookMode?: string;
-              youtubeMode?: string;
-              pinterestBoardId?: string;
-            };
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/publish',
-                body: {
-                  platforms,
-                  content: {
-                    text,
-                    mediaUrl: mediaUrl || undefined,
-                    mediaUrls: maybeArray(additionalOptions.mediaUrls),
-                    mediaType: additionalOptions.mediaType || 'auto',
-                    facebookMode: additionalOptions.facebookMode,
-                    youtubeMode: additionalOptions.youtubeMode,
-                    pinterestBoardId: additionalOptions.pinterestBoardId,
-                  },
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'publishAi') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const prompt = this.getNodeParameter('aiPrompt', i) as string;
-            const aiOptions = this.getNodeParameter('aiOptions', i) as {
-              hashtags?: string;
-              tone?: string;
-              style?: string;
-              callToAction?: string;
-              strictAi?: boolean;
-              facebookMode?: string;
-              youtubeMode?: string;
-            };
-
-            const body: Record<string, unknown> = {
-              platforms,
-              mediaUrl: mediaUrl || undefined,
-              prompt: prompt || undefined,
-              hashtags: aiOptions.hashtags || 'platform_auto',
-              strictAi: aiOptions.strictAi || false,
-              facebookMode: aiOptions.facebookMode,
-              youtubeMode: aiOptions.youtubeMode,
-            };
-
-            if (aiOptions.tone || aiOptions.style || aiOptions.callToAction) {
-              body.generation = {
-                tone: aiOptions.tone,
-                style: aiOptions.style,
-                callToAction: aiOptions.callToAction,
-              };
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/publish-ai',
-                body,
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'ai') {
-          if (operation === 'generate') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const prompt = this.getNodeParameter('aiPrompt', i) as string;
-            const aiOptions = this.getNodeParameter('aiOptions', i) as {
-              hashtags?: string;
-              tone?: string;
-              style?: string;
-              callToAction?: string;
-              strictAi?: boolean;
-            };
-
-            const body: Record<string, unknown> = {
-              platforms,
-              mediaUrl: mediaUrl || undefined,
-              prompt: prompt || undefined,
-              hashtags: aiOptions.hashtags || 'platform_auto',
-              strictAi: aiOptions.strictAi || false,
-            };
-
-            if (aiOptions.tone || aiOptions.style || aiOptions.callToAction) {
-              body.generation = {
-                tone: aiOptions.tone,
-                style: aiOptions.style,
-                callToAction: aiOptions.callToAction,
-              };
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/ai/generate-content',
-                body,
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'media') {
-          if (operation === 'upload') {
-            const inputMode = this.getNodeParameter('mediaInputMode', i) as string;
-
-            if (inputMode === 'binary') {
-              const binaryPropertyName = this.getNodeParameter('binaryPropertyName', i) as string;
-              const binaryData = this.helpers.assertBinaryData(i, binaryPropertyName);
-              const buffer = await this.helpers.getBinaryDataBuffer(i, binaryPropertyName);
-
-              const formData = new FormData();
-              formData.append('file', new Blob([buffer]), binaryData.fileName || 'upload');
-
-              response = await requestV1(
-                this,
-                {
-                  method: 'POST' as IHttpRequestMethods,
-                  url: '/media/upload',
-                  body: formData,
-                },
-                optionalHeaders,
-              );
-            } else {
-              const filePath = this.getNodeParameter('filePath', i) as string;
-              const fs = await import('fs/promises');
-              const path = await import('path');
-
-              const fileBuffer = await fs.readFile(filePath);
-              const fileName = path.basename(filePath);
-
-              const formData = new FormData();
-              formData.append('file', new Blob([fileBuffer]), fileName);
-
-              response = await requestV1(
-                this,
-                {
-                  method: 'POST' as IHttpRequestMethods,
-                  url: '/media/upload',
-                  body: formData,
-                },
-                optionalHeaders,
-              );
-            }
-          }
-        } else if (resource === 'scheduledPost') {
-          if (operation === 'create') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const text = this.getNodeParameter('text', i) as string;
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const scheduledTime = this.getNodeParameter('scheduledTime', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/schedule',
-                body: {
-                  platforms,
-                  content: {
-                    text,
-                    mediaUrl: mediaUrl || undefined,
-                  },
-                  scheduledTime,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getAll') {
-            const platformFilter = this.getNodeParameter('platformFilter', i) as string;
-            const qs: Record<string, string> = {};
-            if (platformFilter) {
-              qs.platform = platformFilter;
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/scheduled',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'delete') {
-            const scheduleId = this.getNodeParameter('scheduleId', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'DELETE' as IHttpRequestMethods,
-                url: `/scheduled/${scheduleId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'trigger') {
-            const scheduleId = this.getNodeParameter('scheduleId', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/scheduled/${scheduleId}/trigger`,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'account') {
-          if (operation === 'getAll') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/accounts',
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'validation') {
-          if (operation === 'validate') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const text = this.getNodeParameter('text', i) as string;
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const additionalOptions = this.getNodeParameter('additionalOptions', i) as {
-              mediaUrls?: string;
-              mediaType?: string;
-            };
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/validate',
-                body: {
-                  platforms,
-                  content: {
-                    text,
-                    mediaUrl: mediaUrl || undefined,
-                    mediaUrls: maybeArray(additionalOptions.mediaUrls),
-                    mediaType: additionalOptions.mediaType || 'auto',
-                  },
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'analytics') {
-          if (operation === 'getAnalytics') {
-            const platform = this.getNodeParameter('analyticsPlatform', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/analytics',
-                qs: { platform },
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'brandVoice') {
-          if (operation === 'create') {
-            const name = this.getNodeParameter('brandVoiceName', i) as string;
-            const description = this.getNodeParameter('brandVoiceDescription', i) as string;
-            const tone = this.getNodeParameter('brandVoiceTone', i) as string;
-            const vocabulary = this.getNodeParameter('brandVoiceVocabulary', i) as string;
-            const bannedWords = this.getNodeParameter('brandVoiceBannedWords', i) as string;
-            const isDefault = this.getNodeParameter('brandVoiceIsDefault', i) as boolean;
-
-            const body: Record<string, unknown> = {
-              name,
-              description: description || undefined,
-              tone: tone || undefined,
-              vocabulary: maybeArray(vocabulary),
-              bannedWords: maybeArray(bannedWords),
-              isDefault,
-            };
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/brand-voice',
-                body,
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'list') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/brand-voice',
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'campaign') {
-          if (operation === 'plan') {
-            const objective = this.getNodeParameter('campaignObjective', i) as string;
-            const platforms = this.getNodeParameter('campaignPlatforms', i) as string[];
-            const brief = this.getNodeParameter('campaignBrief', i) as string;
-            const postCount = this.getNodeParameter('campaignPostCount', i) as number;
-            const startDate = this.getNodeParameter('campaignStartDate', i) as string;
-            const endDate = this.getNodeParameter('campaignEndDate', i) as string;
-
-            const normalizedBrief = brief || objective;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/campaigns',
-                body: {
-                  brief: normalizedBrief,
-                  platforms,
-                  postCount: Number.isFinite(postCount) ? postCount : undefined,
-                  startDate: startDate || undefined,
-                  endDate: endDate || undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'list') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/campaigns',
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'schedule') {
-            const campaignId = this.getNodeParameter('campaignId', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/campaigns/${campaignId}/schedule`,
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'inbox') {
-          if (operation === 'list') {
-            const platformFilter = this.getNodeParameter('inboxPlatformFilter', i) as string;
-            const statusFilter = this.getNodeParameter('inboxStatusFilter', i) as string;
-            const limit = this.getNodeParameter('inboxLimit', i) as number;
-            const qs: Record<string, string | number> = { limit };
-
-            if (platformFilter) {
-              qs.platform = platformFilter;
-            }
-            if (statusFilter) {
-              qs.status = statusFilter;
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/inbox',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'reply') {
-            const threadId = this.getNodeParameter('inboxThreadId', i) as string;
-            const message = this.getNodeParameter('inboxMessage', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/inbox/${threadId}/reply`,
-                body: { text: message },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getThread') {
-            const threadId = this.getNodeParameter('inboxThreadId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/inbox/${threadId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'updateStatus') {
-            const threadId = this.getNodeParameter('inboxThreadId', i) as string;
-            const status = this.getNodeParameter('inboxThreadStatus', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/inbox/${threadId}/status`,
-                body: { status },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'listening') {
-          if (operation === 'refresh') {
-            const platforms = this.getNodeParameter('listeningPlatforms', i) as string[];
-            const keywordIdsRaw = this.getNodeParameter('listeningKeywordIds', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/refresh',
-                body: {
-                  platforms,
-                  keywordIds: maybeArray(keywordIdsRaw),
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'listKeywords') {
-            const activeOnly = this.getNodeParameter('listeningActiveOnly', i) as boolean;
-            const keywordType = this.getNodeParameter('listeningKeywordType', i) as string;
-            const qs: Record<string, string> = {
-              active: activeOnly ? 'true' : 'false',
-            };
-            if (keywordType) {
-              qs.type = keywordType;
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/listening/keywords',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'createKeyword') {
-            const keyword = this.getNodeParameter('listeningKeyword', i) as string;
-            const type = this.getNodeParameter('listeningKeywordType', i) as string;
-            const platforms = this.getNodeParameter('listeningPlatforms', i) as string[];
-            const notifyEmail = this.getNodeParameter('listeningNotifyEmail', i) as boolean;
-            const notifyWebhook = this.getNodeParameter('listeningNotifyWebhook', i) as boolean;
-            const webhookUrl = this.getNodeParameter('listeningWebhookUrl', i) as string;
-            const sentimentFilter = this.getNodeParameter('listeningSentimentFilter', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/keywords',
-                body: {
-                  keyword,
-                  type,
-                  platforms: platforms.length > 0 ? platforms : undefined,
-                  notifyEmail,
-                  notifyWebhook,
-                  webhookUrl: webhookUrl || undefined,
-                  sentimentFilter: sentimentFilter || undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getKeyword') {
-            const keywordId = this.getNodeParameter('listeningKeywordId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/listening/keywords/${keywordId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'updateKeyword') {
-            const keywordId = this.getNodeParameter('listeningKeywordId', i) as string;
-            const type = this.getNodeParameter('listeningKeywordType', i) as string;
-            const platforms = this.getNodeParameter('listeningPlatforms', i) as string[];
-            const notifyEmail = this.getNodeParameter('listeningNotifyEmail', i) as boolean;
-            const notifyWebhook = this.getNodeParameter('listeningNotifyWebhook', i) as boolean;
-            const webhookUrl = this.getNodeParameter('listeningWebhookUrl', i) as string;
-            const sentimentFilter = this.getNodeParameter('listeningSentimentFilter', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'PATCH' as IHttpRequestMethods,
-                url: `/listening/keywords/${keywordId}`,
-                body: {
-                  type,
-                  platforms: platforms.length > 0 ? platforms : undefined,
-                  notifyEmail,
-                  notifyWebhook,
-                  webhookUrl: webhookUrl || undefined,
-                  sentimentFilter: sentimentFilter || undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'deleteKeyword') {
-            const keywordId = this.getNodeParameter('listeningKeywordId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'DELETE' as IHttpRequestMethods,
-                url: `/listening/keywords/${keywordId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'listMentions') {
-            const keywordId = this.getNodeParameter('listeningMentionKeywordId', i) as string;
-            const platform = this.getNodeParameter('listeningMentionPlatform', i) as string;
-            const sentiment = this.getNodeParameter('listeningSentimentFilter', i) as string;
-            const isRead = this.getNodeParameter('listeningIsRead', i) as string;
-            const isArchived = this.getNodeParameter('listeningIsArchived', i) as string;
-            const since = this.getNodeParameter('listeningSince', i) as string;
-            const limit = this.getNodeParameter('listeningLimit', i) as number;
-            const offset = this.getNodeParameter('listeningOffset', i) as number;
-
-            const qs: Record<string, string | number> = {
-              limit,
-              offset,
-            };
-
-            if (keywordId) qs.keyword_id = keywordId;
-            if (platform) qs.platform = platform;
-            if (sentiment) qs.sentiment = sentiment;
-            if (isRead) qs.is_read = isRead;
-            if (isArchived) qs.is_archived = isArchived;
-            if (since) qs.since = since;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/listening/mentions',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getMention') {
-            const mentionId = this.getNodeParameter('listeningMentionId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/listening/mentions/${mentionId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'markMentionsRead') {
-            const mentionIds = this.getNodeParameter('listeningMentionIds', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/mentions/mark-read',
-                body: {
-                  ids: maybeArray(mentionIds) ?? [],
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'archiveMentions') {
-            const mentionIds = this.getNodeParameter('listeningMentionIds', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/mentions/archive',
-                body: {
-                  ids: maybeArray(mentionIds) ?? [],
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'listAlerts') {
-            const unreadOnly = this.getNodeParameter('listeningAlertsUnreadOnly', i) as boolean;
-            const priority = this.getNodeParameter('listeningAlertPriority', i) as string;
-            const limit = this.getNodeParameter('listeningLimit', i) as number;
-            const qs: Record<string, string | number> = {
-              unread: unreadOnly ? 'true' : 'false',
-              limit,
-            };
-            if (priority) {
-              qs.priority = priority;
-            }
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/listening/alerts',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'markAlertsRead') {
-            const alertIds = this.getNodeParameter('listeningAlertIds', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/alerts/mark-read',
-                body: {
-                  ids: maybeArray(alertIds) ?? [],
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'dismissAlerts') {
-            const alertIds = this.getNodeParameter('listeningAlertIds', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/listening/alerts/dismiss',
-                body: {
-                  ids: maybeArray(alertIds) ?? [],
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getSummary') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/listening/summary',
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'aiMedia') {
-          if (operation === 'create') {
-            const provider = this.getNodeParameter('aiMediaProvider', i) as string;
-            const prompt = this.getNodeParameter('aiMediaPrompt', i) as string;
-            const mediaType = this.getNodeParameter('aiMediaType', i) as string;
-            const stylePreset = this.getNodeParameter('aiMediaStylePreset', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/ai-media',
-                body: {
-                  provider,
-                  prompt,
-                  media_type: mediaType,
-                  parameters: stylePreset ? { stylePreset } : {},
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getStatus') {
-            const jobId = this.getNodeParameter('aiMediaJobId', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/ai-media/${jobId}`,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'meta') {
-          if (operation === 'getCapabilities') {
-            response = await requestV1(this, { method: 'GET' as IHttpRequestMethods, url: '/capabilities' }, optionalHeaders);
-          } else if (operation === 'getRequirements') {
-            const platform = this.getNodeParameter('metaPlatform', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/requirements',
-                qs: { platform },
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getPlatformSettingsSchema') {
-            const platform = this.getNodeParameter('metaPlatform', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/platforms/schema',
-                qs: { platform },
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getBestTimes') {
-            const platform = this.getNodeParameter('metaPlatform', i) as string;
-            const limit = this.getNodeParameter('metaBestTimesLimit', i) as number;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/best-times',
-                qs: { platform, limit },
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getWebhookEventsCatalog') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/webhooks/events-catalog',
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getWebhookTriggers') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/webhooks/triggers',
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'contentScore') {
-          if (operation === 'score') {
-            const platforms = this.getNodeParameter('platforms', i) as string[];
-            const text = this.getNodeParameter('text', i) as string;
-            const mediaUrl = this.getNodeParameter('mediaUrl', i) as string;
-            const scoreMediaUrls = this.getNodeParameter('scoreMediaUrls', i) as string;
-            const scoreScheduledTime = this.getNodeParameter('scoreScheduledTime', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/content-score',
-                body: {
-                  platforms,
-                  text,
-                  mediaUrl: mediaUrl || undefined,
-                  mediaUrls: maybeArray(scoreMediaUrls),
-                  scheduledTime: scoreScheduledTime || undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'library') {
-          if (operation === 'list') {
-            const libraryType = this.getNodeParameter('libraryType', i) as string;
-            const category = this.getNodeParameter('libraryCategory', i) as string;
-            const tags = this.getNodeParameter('libraryTags', i) as string;
-            const targetPlatforms = this.getNodeParameter('libraryTargetPlatforms', i) as string[];
-            const search = this.getNodeParameter('librarySearch', i) as string;
-            const limit = this.getNodeParameter('libraryLimit', i) as number;
-            const offset = this.getNodeParameter('libraryOffset', i) as number;
-
-            const qs: Record<string, string | number> = { limit, offset };
-            if (libraryType) qs.type = libraryType;
-            if (category) qs.category = category;
-            if (tags) qs.tags = tags;
-            if (targetPlatforms.length > 0) qs.platform = targetPlatforms[0];
-            if (search) qs.search = search;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/library',
-                qs,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'create') {
-            const title = this.getNodeParameter('libraryTitle', i) as string;
-            const text = this.getNodeParameter('libraryText', i) as string;
-            const libraryType = this.getNodeParameter('libraryType', i) as string;
-            const category = this.getNodeParameter('libraryCategory', i) as string;
-            const tags = this.getNodeParameter('libraryTags', i) as string;
-            const targetPlatforms = this.getNodeParameter('libraryTargetPlatforms', i) as string[];
-            const evergreenEnabled = this.getNodeParameter('libraryEvergreenEnabled', i) as boolean;
-            const evergreenIntervalDays = this.getNodeParameter('libraryEvergreenIntervalDays', i) as number;
-            const evergreenMaxPublishes = this.getNodeParameter('libraryEvergreenMaxPublishes', i) as number;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/library',
-                body: {
-                  title,
-                  text,
-                  type: libraryType,
-                  category: category || undefined,
-                  tags: maybeArray(tags),
-                  targetPlatforms: targetPlatforms.length > 0 ? targetPlatforms : undefined,
-                  evergreenEnabled,
-                  evergreenIntervalDays: evergreenIntervalDays > 0 ? evergreenIntervalDays : undefined,
-                  evergreenMaxPublishes: evergreenMaxPublishes > 0 ? evergreenMaxPublishes : undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'get') {
-            const itemId = this.getNodeParameter('libraryItemId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/library/${itemId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'update') {
-            const itemId = this.getNodeParameter('libraryItemId', i) as string;
-            const title = this.getNodeParameter('libraryTitle', i) as string;
-            const text = this.getNodeParameter('libraryText', i) as string;
-            const libraryType = this.getNodeParameter('libraryType', i) as string;
-            const category = this.getNodeParameter('libraryCategory', i) as string;
-            const tags = this.getNodeParameter('libraryTags', i) as string;
-            const targetPlatforms = this.getNodeParameter('libraryTargetPlatforms', i) as string[];
-            const evergreenEnabled = this.getNodeParameter('libraryEvergreenEnabled', i) as boolean;
-            const evergreenIntervalDays = this.getNodeParameter('libraryEvergreenIntervalDays', i) as number;
-            const evergreenMaxPublishes = this.getNodeParameter('libraryEvergreenMaxPublishes', i) as number;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'PATCH' as IHttpRequestMethods,
-                url: `/library/${itemId}`,
-                body: {
-                  title,
-                  text,
-                  type: libraryType,
-                  category: category || undefined,
-                  tags: maybeArray(tags),
-                  targetPlatforms: targetPlatforms.length > 0 ? targetPlatforms : undefined,
-                  evergreenEnabled,
-                  evergreenIntervalDays: evergreenIntervalDays > 0 ? evergreenIntervalDays : undefined,
-                  evergreenMaxPublishes: evergreenMaxPublishes > 0 ? evergreenMaxPublishes : undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'delete') {
-            const itemId = this.getNodeParameter('libraryItemId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'DELETE' as IHttpRequestMethods,
-                url: `/library/${itemId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'listCategories') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/library/categories',
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'listTags') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/library/tags',
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'approvals') {
-          if (operation === 'list') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/approvals',
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'approve') {
-            const postId = this.getNodeParameter('approvalPostId', i) as string;
-            const comment = this.getNodeParameter('approvalComment', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/approvals/${postId}/approve`,
-                body: {
-                  comment: comment || undefined,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'reject') {
-            const postId = this.getNodeParameter('approvalPostId', i) as string;
-            const reason = this.getNodeParameter('approvalReason', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/approvals/${postId}/reject`,
-                body: { reason },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'bulkSchedule') {
-          if (operation === 'listImports') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/bulk-schedule',
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'getImport') {
-            const importId = this.getNodeParameter('bulkImportId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/bulk-schedule/${importId}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'validateCsv') {
-            const csvContent = this.getNodeParameter('bulkCsvContent', i) as string;
-            const filename = this.getNodeParameter('bulkFilename', i) as string;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/bulk-schedule/validate',
-                body: {
-                  csvContent,
-                  filename,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'importCsv') {
-            const csvContent = this.getNodeParameter('bulkCsvContent', i) as string;
-            const filename = this.getNodeParameter('bulkFilename', i) as string;
-            const skipErrors = this.getNodeParameter('bulkSkipErrors', i) as boolean;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/bulk-schedule/import',
-                body: {
-                  csvContent,
-                  filename,
-                  skipErrors,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'downloadTemplate') {
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: '/bulk-schedule/template',
-                json: false,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'connect') {
-          if (operation === 'getConnectAction') {
-            const platform = this.getNodeParameter('connectPlatform', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'GET' as IHttpRequestMethods,
-                url: `/connect/${platform}`,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'connectToken') {
-            const platform = this.getNodeParameter('connectPlatform', i) as string;
-            const credentialsJson = this.getNodeParameter('connectCredentialsJson', i) as string;
-            const parsed = parseJsonInput(credentialsJson, 'Credentials JSON');
-            const credentials = assertObject(parsed, 'Credentials JSON must parse to an object');
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/connect/token',
-                body: {
-                  platform,
-                  credentials,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          } else if (operation === 'connectWebhook') {
-            const platform = this.getNodeParameter('connectPlatform', i) as string;
-            const webhookUrl = this.getNodeParameter('connectWebhookUrl', i) as string;
-            const metadataJson = this.getNodeParameter('connectMetadataJson', i) as string;
-            const parsedMetadata = parseJsonInput(metadataJson, 'Metadata JSON');
-            const metadata = parsedMetadata ? assertObject(parsedMetadata, 'Metadata JSON must parse to an object') : undefined;
-
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: '/connect/webhook',
-                body: {
-                  platform,
-                  webhookUrl,
-                  metadata,
-                },
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'webhooks') {
-          if (operation === 'testWebhook') {
-            const webhookId = this.getNodeParameter('webhookId', i) as string;
-            response = await requestV1(
-              this,
-              {
-                method: 'POST' as IHttpRequestMethods,
-                url: `/webhooks/${webhookId}/test`,
-                json: true,
-              },
-              optionalHeaders,
-            );
-          }
-        } else if (resource === 'advanced') {
-          if (operation === 'apiRequest') {
-            const method = this.getNodeParameter('advancedMethod', i) as IHttpRequestMethods;
-            const path = this.getNodeParameter('advancedPath', i) as string;
-            const queryJson = this.getNodeParameter('advancedQueryJson', i) as string;
-            const bodyJson = this.getNodeParameter('advancedBodyJson', i) as string;
-            const responseMode = this.getNodeParameter('advancedResponseMode', i) as string;
-            const requestTimeoutMs = this.getNodeParameter('requestTimeoutMs', i) as number;
-
-            const normalizedPath = getOptionalString(path);
-            if (!normalizedPath) {
-              throw new NodeOperationError(this.getNode(), 'Path is required for advanced API request');
-            }
-
-            if (!/^\/api\/v[12]\//.test(normalizedPath)) {
-              throw new NodeOperationError(
-                this.getNode(),
-                'Advanced path must start with /api/v1/ or /api/v2/',
-              );
-            }
-
-            const parsedQuery = parseJsonInput(queryJson, 'Query JSON');
-            const parsedBody = parseJsonInput(bodyJson, 'Body JSON');
-            const qs = parsedQuery ? assertObject(parsedQuery, 'Query JSON must parse to an object') : undefined;
-            const body = parsedBody === undefined ? undefined : parsedBody;
-
-            response = await requestAbsolute(
-              this,
-              {
-                method,
-                url: normalizedPath,
-                qs,
-                body,
-                json: responseMode === 'json',
-                encoding: responseMode === 'binary' ? null : undefined,
-                timeout: requestTimeoutMs > 0 ? requestTimeoutMs : undefined,
-              },
-              optionalHeaders,
-            );
-          }
+        const handler = RESOURCE_HANDLERS[resource];
+        if (!handler) {
+          throw new NodeOperationError(this.getNode(), `Unknown resource: ${resource}`);
         }
 
+        const response = await handler(this, operation, i, optionalHeaders);
         returnData.push({ json: normalizeResponse(response) });
       } catch (error) {
         if (this.continueOnFail()) {

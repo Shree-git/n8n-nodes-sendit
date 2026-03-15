@@ -40,10 +40,6 @@ function verifyWebhookSignature(
       .update(signedPayload)
       .digest('hex');
 
-    if (expectedSignature.length !== computedSignature.length) {
-      return false;
-    }
-
     const expectedBuf = Buffer.from(expectedSignature, 'hex');
     const computedBuf = Buffer.from(computedSignature, 'hex');
 
@@ -202,7 +198,7 @@ export class SendItTrigger implements INodeType {
     icon: 'file:sendit.svg',
     group: ['trigger'],
     version: 1,
-    subtitle: '={{$parameter["customEvent"] || $parameter["event"]}}',
+    subtitle: '={{$parameter["customEvent"] || ($parameter["event"] || []).join(", ")}}',
     description: 'Triggers when events occur in SendIt',
     defaults: {
       name: 'SendIt Trigger',
@@ -225,13 +221,13 @@ export class SendItTrigger implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Event',
+        displayName: 'Events',
         name: 'event',
-        type: 'options',
+        type: 'multiOptions',
         options: EVENT_OPTIONS,
-        default: 'post.published',
+        default: ['post.published'],
         required: true,
-        description: 'The catalog event to listen for',
+        description: 'The catalog events to listen for',
       },
       {
         displayName: 'Custom Event',
@@ -274,9 +270,8 @@ export class SendItTrigger implements INodeType {
 
       async create(this: IHookFunctions): Promise<boolean> {
         const webhookUrl = this.getNodeWebhookUrl('default');
-        const selectedEvent = this.getNodeParameter('event') as string;
+        const selectedEvents = this.getNodeParameter('event') as string[];
         const customEvent = this.getNodeParameter('customEvent') as string;
-        const event = customEvent.trim().length > 0 ? customEvent.trim() : selectedEvent;
         const webhookData = this.getWorkflowStaticData('node');
 
         const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -291,7 +286,7 @@ export class SendItTrigger implements INodeType {
             },
             body: JSON.stringify({
               url: webhookUrl,
-              events: [event],
+              events: customEvent.trim().length > 0 ? [customEvent.trim()] : selectedEvents,
             }),
           },
         );
@@ -340,7 +335,11 @@ export class SendItTrigger implements INodeType {
 
     const signature = req.headers['x-sendit-signature'] as string | undefined;
     const bodyData = this.getBodyData();
-    const rawBody = JSON.stringify(bodyData);
+    const rawBody = typeof req.rawBody === 'string'
+      ? req.rawBody
+      : Buffer.isBuffer(req.rawBody)
+        ? req.rawBody.toString('utf8')
+        : JSON.stringify(bodyData);
 
     if (secret) {
       if (!signature) {

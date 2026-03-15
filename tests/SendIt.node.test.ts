@@ -779,3 +779,279 @@ describe('SendIt node advanced apiRequest', () => {
     await expect(harness.run()).rejects.toThrow('Body JSON must be valid JSON');
   });
 });
+
+describe('SendIt node Phase 2 new resources', () => {
+  const phase2Cases: Array<{
+    name: string;
+    params: NodeParameters;
+    expected: Partial<Record<string, unknown>>;
+  }> = [
+    // Dead Letter
+    {
+      name: 'deadLetter.list',
+      params: { resource: 'deadLetter', operation: 'list', deadLetterStatus: 'dead', deadLetterLimit: 50 },
+      expected: { method: 'GET', url: '/dead-letter' },
+    },
+    {
+      name: 'deadLetter.requeue',
+      params: { resource: 'deadLetter', operation: 'requeue', deadLetterId: 'dl_1' },
+      expected: { method: 'POST', url: '/dead-letter/dl_1/requeue', json: true },
+    },
+    {
+      name: 'deadLetter.discard',
+      params: { resource: 'deadLetter', operation: 'discard', deadLetterId: 'dl_2' },
+      expected: { method: 'POST', url: '/dead-letter/dl_2/discard', json: true },
+    },
+    // Audit Log
+    {
+      name: 'auditLog.list',
+      params: {
+        resource: 'auditLog',
+        operation: 'list',
+        auditAction: 'create',
+        auditResourceType: 'post',
+        auditStartDate: '2026-01-01T00:00:00Z',
+        auditEndDate: '2026-02-01T00:00:00Z',
+        auditLimit: 25,
+        auditOffset: 0,
+      },
+      expected: { method: 'GET', url: '/audit-log' },
+    },
+    // Brand Voice CRUD completion
+    {
+      name: 'brandVoice.get',
+      params: { resource: 'brandVoice', operation: 'get', brandVoiceId: 'bv_1' },
+      expected: { method: 'GET', url: '/brand-voice/bv_1' },
+    },
+    {
+      name: 'brandVoice.update',
+      params: {
+        resource: 'brandVoice',
+        operation: 'update',
+        brandVoiceId: 'bv_2',
+        brandVoiceName: 'Updated Voice',
+        brandVoiceDescription: 'New desc',
+        brandVoiceTone: 'casual',
+        brandVoiceVocabulary: 'fresh,bold',
+        brandVoiceBannedWords: 'boring',
+        brandVoiceIsDefault: false,
+      },
+      expected: { method: 'PATCH', url: '/brand-voice/bv_2', json: true },
+    },
+    {
+      name: 'brandVoice.delete',
+      params: { resource: 'brandVoice', operation: 'delete', brandVoiceId: 'bv_3' },
+      expected: { method: 'DELETE', url: '/brand-voice/bv_3' },
+    },
+    // Webhooks CRUD completion
+    {
+      name: 'webhooks.list',
+      params: { resource: 'webhooks', operation: 'list' },
+      expected: { method: 'GET', url: '/webhooks' },
+    },
+    {
+      name: 'webhooks.get',
+      params: { resource: 'webhooks', operation: 'get', webhookId: 'wh_1' },
+      expected: { method: 'GET', url: '/webhooks/wh_1' },
+    },
+    {
+      name: 'webhooks.update',
+      params: {
+        resource: 'webhooks',
+        operation: 'update',
+        webhookId: 'wh_2',
+        webhookUpdateUrl: 'https://example.com/hook',
+        webhookUpdateEvents: 'post.published,post.failed',
+        webhookUpdateActive: true,
+      },
+      expected: { method: 'PATCH', url: '/webhooks/wh_2', json: true },
+    },
+    // AI auxiliary
+    {
+      name: 'ai.replySuggestions',
+      params: {
+        resource: 'ai',
+        operation: 'replySuggestions',
+        aiMentionId: 'm_1',
+        aiTone: 'professional',
+        aiMaxLength: 280,
+      },
+      expected: { method: 'POST', url: '/ai/reply-suggestions', json: true },
+    },
+    {
+      name: 'ai.mentionSummary',
+      params: {
+        resource: 'ai',
+        operation: 'mentionSummary',
+        aiSummarySince: '2026-02-01T00:00:00Z',
+        aiSummaryPlatform: 'x',
+        aiSummaryKeywordId: 'kw_1',
+        aiSummaryLimit: 100,
+      },
+      expected: { method: 'POST', url: '/ai/mention-summary', json: true },
+    },
+    {
+      name: 'ai.feedback',
+      params: {
+        resource: 'ai',
+        operation: 'feedback',
+        aiLogId: 'log_1',
+        aiRating: 5,
+        aiNotes: 'Great output',
+      },
+      expected: { method: 'POST', url: '/ai/feedback', json: true },
+    },
+    // Conversions
+    {
+      name: 'conversions.track',
+      params: {
+        resource: 'conversions',
+        operation: 'track',
+        conversionTrackedLinkId: 'tl_1',
+        conversionShortCode: 'abc',
+        conversionType: 'signup',
+        conversionValue: 10,
+        conversionMetadataJson: '{"source":"email"}',
+      },
+      expected: { method: 'POST', url: '/conversions', json: true },
+    },
+  ];
+
+  phase2Cases.forEach((testCase) => {
+    it(`maps ${testCase.name}`, async () => {
+      const harness = createHarness(testCase.params);
+      await harness.run();
+      const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+      expect(request).toMatchObject(testCase.expected);
+    });
+  });
+});
+
+describe('SendIt node pagination and body verification', () => {
+  it('account.getAll sends limit in qs', async () => {
+    const harness = createHarness({
+      resource: 'account',
+      operation: 'getAll',
+      accountLimit: 25,
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'GET', url: '/accounts' });
+    expect(request.qs).toMatchObject({ limit: 25 });
+  });
+
+  it('campaign.list sends limit and offset in qs', async () => {
+    const harness = createHarness({
+      resource: 'campaign',
+      operation: 'list',
+      campaignLimit: 10,
+      campaignOffset: 5,
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'GET', url: '/campaigns' });
+    expect(request.qs).toMatchObject({ limit: 10, offset: 5 });
+  });
+
+  it('approvals.list sends limit and offset in qs', async () => {
+    const harness = createHarness({
+      resource: 'approvals',
+      operation: 'list',
+      approvalLimit: 30,
+      approvalOffset: 10,
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'GET', url: '/approvals' });
+    expect(request.qs).toMatchObject({ limit: 30, offset: 10 });
+  });
+
+  it('brandVoice.list sends limit in qs', async () => {
+    const harness = createHarness({
+      resource: 'brandVoice',
+      operation: 'list',
+      brandVoiceLimit: 15,
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'GET', url: '/brand-voice' });
+    expect(request.qs).toMatchObject({ limit: 15 });
+  });
+
+  it('campaign.plan uses brief field with objective fallback', async () => {
+    const harness = createHarness({
+      resource: 'campaign',
+      operation: 'plan',
+      campaignObjective: 'Increase brand awareness',
+      campaignPlatforms: ['linkedin', 'x'],
+      campaignBrief: '',
+      campaignPostCount: 3,
+      campaignStartDate: '',
+      campaignEndDate: '',
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'POST', url: '/campaigns', json: true });
+    const body = request.body as Record<string, unknown>;
+    expect(body.brief).toBe('Increase brand awareness');
+    expect(body.platforms).toEqual(['linkedin', 'x']);
+    expect(body.postCount).toBe(3);
+  });
+
+  it('aiMedia.create sends stylePreset in parameters when provided', async () => {
+    const harness = createHarness({
+      resource: 'aiMedia',
+      operation: 'create',
+      aiMediaProvider: 'runway',
+      aiMediaPrompt: 'A sunset timelapse',
+      aiMediaType: 'video',
+      aiMediaStylePreset: 'cinematic',
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'POST', url: '/ai-media', json: true });
+    const body = request.body as Record<string, unknown>;
+    expect(body.provider).toBe('runway');
+    expect(body.prompt).toBe('A sunset timelapse');
+    expect(body.media_type).toBe('video');
+    expect(body.parameters).toEqual({ stylePreset: 'cinematic' });
+  });
+
+  it('aiMedia.create sends empty parameters when no stylePreset', async () => {
+    const harness = createHarness({
+      resource: 'aiMedia',
+      operation: 'create',
+      aiMediaProvider: 'sora',
+      aiMediaPrompt: 'A cat',
+      aiMediaType: 'image',
+      aiMediaStylePreset: '',
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    const body = request.body as Record<string, unknown>;
+    expect(body.parameters).toEqual({});
+  });
+
+  it('deadLetter.list omits status when empty (all statuses)', async () => {
+    const harness = createHarness({
+      resource: 'deadLetter',
+      operation: 'list',
+      deadLetterStatus: '',
+      deadLetterLimit: 50,
+    });
+    await harness.run();
+    const { request } = getRequestCall(harness.httpRequestWithAuthentication);
+    expect(request).toMatchObject({ method: 'GET', url: '/dead-letter' });
+    expect(request.qs).toMatchObject({ limit: 50 });
+    expect((request.qs as Record<string, unknown>).status).toBeUndefined();
+  });
+
+  it('throws on unknown operation', async () => {
+    const harness = createHarness({
+      resource: 'account',
+      operation: 'nonexistent',
+      accountLimit: 50,
+    });
+    await expect(harness.run()).rejects.toThrow('Unknown operation: nonexistent');
+  });
+});

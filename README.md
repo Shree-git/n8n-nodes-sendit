@@ -4,9 +4,16 @@ This is an n8n community node for [SendIt](https://sendit.infiniteappsai.com), a
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-## Release Notes (v1.1.0)
+## Release Notes (v1.2.0)
 
-`1.1.0` is a non-breaking additive release. Existing resources/operations remain intact and new typed coverage is added for meta, content scoring, library, approvals, bulk scheduling, connect, webhook testing, expanded listening/inbox operations, trigger event parity, and advanced v1/v2 API requests.
+`1.2.0` is a major maintainability and feature parity release:
+
+- **Refactored architecture**: Monolithic 2,842-line node split into handler-per-resource dispatch map (23 handler modules)
+- **New resources**: Dead Letter Queue, Audit Log, Conversions
+- **Expanded resources**: Brand Voice (get/update/delete), Webhooks (list/get/update), AI (reply suggestions, mention summary, feedback)
+- **Multi-event triggers**: Trigger node now supports subscribing to multiple events at once
+- **Pagination**: Added limit/offset to account, campaign, approvals, and brand voice list operations
+- **Quick fixes**: Credential test uses `/capabilities` (lighter, scope-free), removed dead `gulp` dependency, fixed ESLint 9 lint script, scoped `requestTimeoutMs` to advanced resource, added missing operation descriptions, narrowed type casts
 
 ## Installation
 
@@ -16,11 +23,11 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 npm install n8n-nodes-sendit
 ```
 
-## Node Coverage (v1.1.0)
+## Node Coverage (v1.2.0)
 
 ### Trigger
 
-`SendIt Trigger` supports catalog events plus custom override:
+`SendIt Trigger` supports catalog events with multi-select plus custom override:
 
 - Post lifecycle: `post.published`, `post.scheduled`, `post.failed`, `post.deleted`, `post.dead_lettered`
 - Account lifecycle: `account.connected`, `account.disconnected`, `account.token_expiring`, `account.token_refresh_failed`, `account.reconnect_required`, `account.refresh_recovered`, `account.auth_recovery_completed`
@@ -36,13 +43,13 @@ npm install n8n-nodes-sendit
 | Resource | Operation(s) |
 |----------|---------------|
 | `post` | `publish`, `publishAi` |
-| `ai` | `generate` |
+| `ai` | `generate`, `replySuggestions`, `mentionSummary`, `feedback` |
 | `media` | `upload` |
 | `scheduledPost` | `create`, `getAll`, `delete`, `trigger` |
 | `account` | `getAll` |
 | `validation` | `validate` |
 | `analytics` | `getAnalytics` |
-| `brandVoice` | `create`, `list` |
+| `brandVoice` | `create`, `list`, `get`, `update`, `delete` |
 | `campaign` | `plan`, `list`, `schedule` |
 | `inbox` | `list`, `reply`, `getThread`, `updateStatus` |
 | `listening` | `refresh`, `listKeywords`, `createKeyword`, `getKeyword`, `updateKeyword`, `deleteKeyword`, `listMentions`, `getMention`, `markMentionsRead`, `archiveMentions`, `listAlerts`, `markAlertsRead`, `dismissAlerts`, `getSummary` |
@@ -53,7 +60,10 @@ npm install n8n-nodes-sendit
 | `approvals` | `list`, `approve`, `reject` |
 | `bulkSchedule` | `listImports`, `getImport`, `validateCsv`, `importCsv`, `downloadTemplate` |
 | `connect` | `getConnectAction`, `connectToken`, `connectWebhook` |
-| `webhooks` | `testWebhook` |
+| `webhooks` | `list`, `get`, `update`, `testWebhook` |
+| `deadLetter` | `list`, `requeue`, `discard` |
+| `auditLog` | `list` |
+| `conversions` | `track` |
 | `advanced` | `apiRequest` |
 
 ### Global Optional Headers
@@ -89,6 +99,16 @@ The node ships with the full SendIt platform catalog option list and should be t
 - `approvalPostId`: `sched_abc123`
 - `approvalComment`: `Approved for publishing`
 
+### Requeue a failed post (`deadLetter.requeue`)
+
+- `deadLetterId`: `dl_abc123`
+
+### Track a conversion (`conversions.track`)
+
+- `conversionTrackedLinkId`: `tl_abc123`
+- `conversionType`: `signup`
+- `conversionValue`: `10`
+
 ### Advanced request (`advanced.apiRequest`)
 
 - `method`: `GET`
@@ -108,21 +128,25 @@ Allowed path prefixes:
 - AI media create uses `provider`, `prompt`, `media_type`, and `parameters`.
 - Bulk CSV validation/import expect raw CSV string in `csvContent`.
 
-## Developer Note: 1.1.0 Endpoint Map Freeze
+## Developer Note: 1.2.0 Endpoint Map
 
-### Typed coverage (locked)
+### Typed coverage
 
 - Meta: `/capabilities`, `/requirements`, `/platforms/schema`, `/best-times`, `/webhooks/events-catalog`, `/webhooks/triggers`
 - Publishing/scheduling: `/publish`, `/publish-ai`, `/schedule`, `/scheduled`, `/scheduled/:id`, `/scheduled/:id/trigger`
-- AI/media: `/ai/generate-content`, `/media/upload`, `/ai-media`, `/ai-media/:id`
+- AI/media: `/ai/generate-content`, `/ai/reply-suggestions`, `/ai/mention-summary`, `/ai/feedback`, `/media/upload`, `/ai-media`, `/ai-media/:id`
 - Quality/validation: `/validate`, `/content-score`, `/analytics`
 - Collaboration: `/inbox`, `/inbox/:threadId`, `/inbox/:threadId/reply`, `/inbox/:threadId/status`
 - Listening: `/listening/*` keyword/mention/alert/summary/refresh routes
 - Library: `/library`, `/library/:id`, `/library/categories`, `/library/tags`
+- Brand Voice: `/brand-voice`, `/brand-voice/:id` (full CRUD)
 - Approvals: `/approvals`, `/approvals/:postId/approve`, `/approvals/:postId/reject`
 - Bulk: `/bulk-schedule`, `/bulk-schedule/:id`, `/bulk-schedule/validate`, `/bulk-schedule/import`, `/bulk-schedule/template`
 - Connect: `/connect/:platform`, `/connect/token`, `/connect/webhook`
-- Webhook helper: `/webhooks/:id/test`
+- Webhooks: `/webhooks`, `/webhooks/:id`, `/webhooks/:id/test` (list, get, update, test)
+- Dead Letter: `/dead-letter`, `/dead-letter/:id/requeue`, `/dead-letter/:id/discard`
+- Audit Log: `/audit-log`
+- Conversions: `/conversions`
 
 ### Advanced coverage (long-tail + v2)
 

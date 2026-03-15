@@ -57,7 +57,7 @@ describe('SendIt trigger registration', () => {
     const context = {
       getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/123',
       getNodeParameter: (name: string) => {
-        if (name === 'event') return 'approval.submitted';
+        if (name === 'event') return ['approval.submitted'];
         if (name === 'customEvent') return '';
         return undefined;
       },
@@ -92,7 +92,7 @@ describe('SendIt trigger registration', () => {
     const context = {
       getNodeWebhookUrl: () => 'https://n8n.example.com/webhook/456',
       getNodeParameter: (name: string) => {
-        if (name === 'event') return 'post.failed';
+        if (name === 'event') return ['post.failed'];
         if (name === 'customEvent') return 'security.api_key_rotation_due';
         return undefined;
       },

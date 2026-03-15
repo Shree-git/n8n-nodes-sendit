@@ -36,10 +36,7 @@ export class SendItApi implements ICredentialType {
   test: ICredentialTestRequest = {
     request: {
       baseURL: 'https://sendit.infiniteappsai.com/api/v1',
-      url: '/inbox',
-      qs: {
-        limit: 1,
-      },
+      url: '/capabilities',
     },
   };
 }
