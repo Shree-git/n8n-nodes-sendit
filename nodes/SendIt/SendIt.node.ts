@@ -1804,13 +1804,14 @@ export class SendIt implements INodeType {
         }
 
         const response = await handler(this, operation, i, optionalHeaders);
-        returnData.push({ json: normalizeResponse(response) });
+        returnData.push({ json: normalizeResponse(response), pairedItem: { item: i } });
       } catch (error) {
         if (this.continueOnFail()) {
           returnData.push({
             json: {
               error: (error as Error).message,
             },
+            pairedItem: { item: i },
           });
           continue;
         }

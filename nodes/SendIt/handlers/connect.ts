@@ -17,7 +17,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
   if (operation === 'connectToken') {
     const platform = context.getNodeParameter('connectPlatform', i) as string;
     const credentialsJson = context.getNodeParameter('connectCredentialsJson', i) as string;
-    const parsed = parseJsonInput(credentialsJson, 'Credentials JSON');
+    const parsed = parseJsonInput(context, credentialsJson, 'Credentials JSON');
     const credentials = assertObject(parsed, 'Credentials JSON must parse to an object');
 
     return sendRequest(
@@ -36,7 +36,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
     const platform = context.getNodeParameter('connectPlatform', i) as string;
     const webhookUrl = context.getNodeParameter('connectWebhookUrl', i) as string;
     const metadataJson = context.getNodeParameter('connectMetadataJson', i) as string;
-    const parsedMetadata = parseJsonInput(metadataJson, 'Metadata JSON');
+    const parsedMetadata = parseJsonInput(context, metadataJson, 'Metadata JSON');
     const metadata = parsedMetadata ? assertObject(parsedMetadata, 'Metadata JSON must parse to an object') : undefined;
 
     return sendRequest(

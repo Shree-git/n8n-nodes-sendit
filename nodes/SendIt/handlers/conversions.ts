@@ -8,7 +8,7 @@ export const handleConversions: ResourceHandler = async (context, operation, i, 
     const conversionType = context.getNodeParameter('conversionType', i) as string;
     const value = context.getNodeParameter('conversionValue', i) as number;
     const metadataJson = context.getNodeParameter('conversionMetadataJson', i) as string;
-    const metadata = parseJsonInput(metadataJson, 'Conversion Metadata JSON');
+    const metadata = parseJsonInput(context, metadataJson, 'Conversion Metadata JSON');
 
     const body: Record<string, unknown> = {};
     if (trackedLinkId) body.trackedLinkId = trackedLinkId;

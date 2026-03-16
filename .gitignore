@@ -5,3 +5,4 @@ dist/
 .vercel
 testing/.env
 *.tgz
+.gstack/

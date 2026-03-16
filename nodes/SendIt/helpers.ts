@@ -3,6 +3,7 @@ import {
   IHttpRequestMethods,
   IHttpRequestOptions,
   IDataObject,
+  NodeOperationError,
 } from 'n8n-workflow';
 
 import { SENDIT_API_BASE_URL } from './constants';
@@ -52,7 +53,7 @@ export function maybeArray(value: unknown): string[] | undefined {
   return undefined;
 }
 
-export function parseJsonInput(value: string | undefined, label: string): unknown {
+export function parseJsonInput(context: IExecuteFunctions, value: string | undefined, label: string): unknown {
   if (!value || value.trim().length === 0) {
     return undefined;
   }
@@ -60,7 +61,7 @@ export function parseJsonInput(value: string | undefined, label: string): unknow
   try {
     return JSON.parse(value);
   } catch {
-    throw new Error(`${label} must be valid JSON`);
+    throw new NodeOperationError(context.getNode(), `${label} must be valid JSON`);
   }
 }
 

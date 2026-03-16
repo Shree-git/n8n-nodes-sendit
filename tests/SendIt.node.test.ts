@@ -237,7 +237,7 @@ describe('SendIt node regression mapping', () => {
       const { credentialName, request } = getRequestCall(harness.httpRequestWithAuthentication);
       expect(credentialName).toBe('sendItApi');
       expect(request).toMatchObject(testCase.expected);
-      expect(output).toEqual([[{ json: { ok: true } }]]);
+      expect(output).toEqual([[{ json: { ok: true }, pairedItem: { item: 0 } }]]);
     });
   });
 
