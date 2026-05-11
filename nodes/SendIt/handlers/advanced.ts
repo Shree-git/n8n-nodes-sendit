@@ -32,7 +32,7 @@ export const handleAdvanced: ResourceHandler = async (context, operation, i, opt
     const parsedQuery = parseJsonInput(context, queryJson, 'Query JSON');
     const parsedBody = parseJsonInput(context, bodyJson, 'Body JSON');
     const qs = parsedQuery
-      ? assertObject(parsedQuery, 'Query JSON must parse to an object')
+      ? assertObject(context, parsedQuery, 'Query JSON must parse to an object')
       : undefined;
     const body = parsedBody === undefined ? undefined : parsedBody;
 

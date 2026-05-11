@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/no-restricted-imports */
 import { describe, expect, it, vi } from 'vitest';
 import { SendIt } from '../nodes/SendIt/SendIt.node';
 

@@ -4,11 +4,12 @@ This is an n8n community node for [SendIt](https://sendit.infiniteappsai.com), a
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-## Release Notes (v1.3.1)
+## Release Notes (v1.3.2)
 
-`1.3.1` is a verification-readiness release:
+`1.3.2` is an n8n verification follow-up release:
 
 - **n8n verification readiness**: Added GitHub Actions provenance publishing support for npm releases
+- **n8n review fixes**: Uses `NodeConnectionTypes.Main`, removes unused request defaults, adds a credential icon, and returns `NodeOperationError` for JSON object validation
 - **Cloud-safe media upload**: Removed host file path reads; media uploads now use n8n binary data only
 - **Standalone package fix**: Removed package imports from the SendIt server codebase
 - **Refactored architecture**: Monolithic 2,842-line node split into handler-per-resource dispatch map (23 handler modules)
@@ -52,7 +53,7 @@ Add a **SendIt Trigger** node as the first node in a new workflow. Select events
 
 Read content ideas from a spreadsheet, generate AI copy, publish to multiple platforms, and get notified on success.
 
-## Node Coverage (v1.3.1)
+## Node Coverage (v1.3.2)
 
 ### Trigger
 

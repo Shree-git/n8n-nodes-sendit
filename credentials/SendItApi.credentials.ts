@@ -2,6 +2,7 @@ import {
   IAuthenticateGeneric,
   ICredentialTestRequest,
   ICredentialType,
+  Icon,
   INodeProperties,
 } from 'n8n-workflow';
 
@@ -9,6 +10,7 @@ export class SendItApi implements ICredentialType {
   name = 'sendItApi';
   displayName = 'SendIt API';
   documentationUrl = 'https://sendit.infiniteappsai.com/documentation.html';
+  icon: Icon = 'file:sendit.svg';
   properties: INodeProperties[] = [
     {
       displayName: 'API Key',

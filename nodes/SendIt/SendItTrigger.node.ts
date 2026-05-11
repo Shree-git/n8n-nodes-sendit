@@ -5,6 +5,7 @@ import {
   INodeTypeDescription,
   IWebhookResponseData,
   IHttpRequestMethods,
+  NodeConnectionTypes,
   NodeOperationError,
 } from 'n8n-workflow';
 import crypto from 'crypto';
@@ -200,7 +201,7 @@ export class SendItTrigger implements INodeType {
       name: 'SendIt Trigger',
     },
     inputs: [],
-    outputs: ['main'],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       {
         name: 'sendItApi',
@@ -233,6 +234,7 @@ export class SendItTrigger implements INodeType {
         description: 'Optional custom event string that overrides Event if set',
       },
     ],
+		usableAsTool: true,
   };
 
   webhookMethods = {

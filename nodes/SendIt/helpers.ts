@@ -3,6 +3,8 @@ import {
   IHttpRequestMethods,
   IHttpRequestOptions,
   IDataObject,
+  JsonObject,
+  NodeApiError,
   NodeOperationError,
 } from 'n8n-workflow';
 
@@ -149,13 +151,17 @@ export async function sendRequest(
       });
     }
 
-    throw error;
+    throw new NodeApiError(context.getNode(), error as JsonObject);
   }
 }
 
-export function assertObject(value: unknown, message: string): Record<string, unknown> {
+export function assertObject(
+  context: IExecuteFunctions,
+  value: unknown,
+  message: string
+): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new Error(message);
+    throw new NodeOperationError(context.getNode(), message);
   }
   return value as Record<string, unknown>;
 }

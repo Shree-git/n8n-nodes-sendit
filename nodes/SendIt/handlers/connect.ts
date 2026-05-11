@@ -18,7 +18,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
     const platform = context.getNodeParameter('connectPlatform', i) as string;
     const credentialsJson = context.getNodeParameter('connectCredentialsJson', i) as string;
     const parsed = parseJsonInput(context, credentialsJson, 'Credentials JSON');
-    const credentials = assertObject(parsed, 'Credentials JSON must parse to an object');
+    const credentials = assertObject(context, parsed, 'Credentials JSON must parse to an object');
 
     return sendRequest(
       context,
@@ -38,7 +38,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
     const metadataJson = context.getNodeParameter('connectMetadataJson', i) as string;
     const parsedMetadata = parseJsonInput(context, metadataJson, 'Metadata JSON');
     const metadata = parsedMetadata
-      ? assertObject(parsedMetadata, 'Metadata JSON must parse to an object')
+      ? assertObject(context, parsedMetadata, 'Metadata JSON must parse to an object')
       : undefined;
 
     return sendRequest(

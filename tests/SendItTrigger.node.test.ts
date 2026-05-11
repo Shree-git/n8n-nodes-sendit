@@ -1,3 +1,4 @@
+/* eslint-disable @n8n/community-nodes/no-restricted-imports */
 import crypto from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import { NodeOperationError } from 'n8n-workflow';

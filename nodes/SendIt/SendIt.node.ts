@@ -6,6 +6,7 @@ import {
   INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
+  NodeConnectionTypes,
   NodeOperationError,
 } from 'n8n-workflow';
 
@@ -25,21 +26,14 @@ export class SendIt implements INodeType {
     defaults: {
       name: 'SendIt',
     },
-    inputs: ['main'],
-    outputs: ['main'],
+    inputs: [NodeConnectionTypes.Main],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       {
         name: 'sendItApi',
         required: true,
       },
     ],
-    requestDefaults: {
-      baseURL: SENDIT_API_BASE_URL,
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-    },
     properties: [
       {
         displayName: 'Resource',
@@ -47,29 +41,29 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         options: [
-          { name: 'Post', value: 'post' },
-          { name: 'Scheduled Post', value: 'scheduledPost' },
-          { name: 'Media', value: 'media' },
+          { name: 'Account', value: 'account' },
+          { name: 'Advanced', value: 'advanced' },
           { name: 'AI', value: 'ai' },
           { name: 'AI Media', value: 'aiMedia' },
-          { name: 'Content Score', value: 'contentScore' },
-          { name: 'Inbox', value: 'inbox' },
-          { name: 'Listening', value: 'listening' },
-          { name: 'Account', value: 'account' },
-          { name: 'Library', value: 'library' },
-          { name: 'Brand Voice', value: 'brandVoice' },
-          { name: 'Campaign', value: 'campaign' },
-          { name: 'Approvals', value: 'approvals' },
           { name: 'Analytics', value: 'analytics' },
-          { name: 'Validation', value: 'validation' },
-          { name: 'Conversions', value: 'conversions' },
-          { name: 'Webhooks', value: 'webhooks' },
-          { name: 'Dead Letter', value: 'deadLetter' },
+          { name: 'Approval', value: 'approvals' },
           { name: 'Audit Log', value: 'auditLog' },
+          { name: 'Brand Voice', value: 'brandVoice' },
           { name: 'Bulk Schedule', value: 'bulkSchedule' },
+          { name: 'Campaign', value: 'campaign' },
           { name: 'Connect', value: 'connect' },
+          { name: 'Content Score', value: 'contentScore' },
+          { name: 'Conversion', value: 'conversions' },
+          { name: 'Dead Letter', value: 'deadLetter' },
+          { name: 'Inbox', value: 'inbox' },
+          { name: 'Library', value: 'library' },
+          { name: 'Listening', value: 'listening' },
+          { name: 'Media', value: 'media' },
           { name: 'Meta', value: 'meta' },
-          { name: 'Advanced', value: 'advanced' },
+          { name: 'Post', value: 'post' },
+          { name: 'Scheduled Post', value: 'scheduledPost' },
+          { name: 'Validation', value: 'validation' },
+          { name: 'Webhook', value: 'webhooks' },
         ],
         default: 'post',
       },
@@ -78,14 +72,14 @@ export class SendIt implements INodeType {
         name: 'teamId',
         type: 'string',
         default: '',
-        description: 'Optional team scope. Sent as X-Team-ID header when provided',
+        description: 'Optional team scope. Sent as X-Team-ID header when provided.',
       },
       {
         displayName: 'Idempotency Key',
         name: 'idempotencyKey',
         type: 'string',
         default: '',
-        description: 'Optional idempotency key. Sent as Idempotency-Key header when provided',
+        description: 'Optional idempotency key. Sent as Idempotency-Key header when provided.',
       },
       {
         displayName:
@@ -144,7 +138,7 @@ export class SendIt implements INodeType {
             name: 'Publish with AI',
             value: 'publishAi',
             description: 'Generate content with AI and publish to platforms',
-            action: 'Publish with AI-generated content',
+            action: 'Publish with ai generated content',
           },
         ],
         default: 'publish',
@@ -157,16 +151,16 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['ai'] } },
         options: [
           {
+            name: 'Feedback',
+            value: 'feedback',
+            description: 'Rate AI-generated content quality',
+            action: 'Submit AI feedback',
+          },
+          {
             name: 'Generate Content',
             value: 'generate',
             description: 'Generate platform-specific content from media or prompt',
             action: 'Generate AI content',
-          },
-          {
-            name: 'Reply Suggestions',
-            value: 'replySuggestions',
-            description: 'Get AI-drafted reply suggestions for a mention',
-            action: 'Get AI reply suggestions',
           },
           {
             name: 'Mention Summary',
@@ -175,10 +169,10 @@ export class SendIt implements INodeType {
             action: 'Summarize mentions with AI',
           },
           {
-            name: 'Feedback',
-            value: 'feedback',
-            description: 'Rate AI-generated content quality',
-            action: 'Submit AI feedback',
+            name: 'Reply Suggestions',
+            value: 'replySuggestions',
+            description: 'Get AI-drafted reply suggestions for a mention',
+            action: 'Get AI reply suggestions',
           },
         ],
         default: 'generate',
@@ -213,16 +207,16 @@ export class SendIt implements INodeType {
             action: 'Schedule a post',
           },
           {
-            name: 'Get All',
-            value: 'getAll',
-            description: 'Get all scheduled posts',
-            action: 'Get all scheduled posts',
-          },
-          {
             name: 'Delete',
             value: 'delete',
             description: 'Cancel a scheduled post',
             action: 'Cancel a scheduled post',
+          },
+          {
+            name: 'Get Many',
+            value: 'getAll',
+            description: 'Get many scheduled posts',
+            action: 'Get many scheduled posts',
           },
           {
             name: 'Trigger Now',
@@ -241,10 +235,10 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['account'] } },
         options: [
           {
-            name: 'Get All',
+            name: 'Get Many',
             value: 'getAll',
-            description: 'Get all connected accounts',
-            action: 'Get all accounts',
+            description: 'Get many connected accounts',
+            action: 'Get many accounts',
           },
         ],
         default: 'getAll',
@@ -296,10 +290,10 @@ export class SendIt implements INodeType {
             action: 'Create a brand voice',
           },
           {
-            name: 'List',
-            value: 'list',
-            description: 'List all brand voice profiles',
-            action: 'List brand voices',
+            name: 'Delete',
+            value: 'delete',
+            description: 'Delete a brand voice profile',
+            action: 'Delete a brand voice',
           },
           {
             name: 'Get',
@@ -308,16 +302,16 @@ export class SendIt implements INodeType {
             action: 'Get a brand voice',
           },
           {
+            name: 'List',
+            value: 'list',
+            description: 'List all brand voice profiles',
+            action: 'List brand voices',
+          },
+          {
             name: 'Update',
             value: 'update',
             description: 'Update a brand voice profile',
             action: 'Update a brand voice',
-          },
-          {
-            name: 'Delete',
-            value: 'delete',
-            description: 'Delete a brand voice profile',
-            action: 'Delete a brand voice',
           },
         ],
         default: 'create',
@@ -330,16 +324,16 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['campaign'] } },
         options: [
           {
-            name: 'Plan',
-            value: 'plan',
-            description: 'Create a new campaign with AI-planned posts',
-            action: 'Plan a campaign',
-          },
-          {
             name: 'List',
             value: 'list',
             description: 'List all campaigns',
             action: 'List campaigns',
+          },
+          {
+            name: 'Plan',
+            value: 'plan',
+            description: 'Create a new campaign with AI-planned posts',
+            action: 'Plan a campaign',
           },
           {
             name: 'Schedule',
@@ -358,6 +352,12 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['inbox'] } },
         options: [
           {
+            name: 'Get Thread',
+            value: 'getThread',
+            description: 'Get a single inbox thread with messages',
+            action: 'Get an inbox thread',
+          },
+          {
             name: 'List',
             value: 'list',
             description: 'List inbox threads',
@@ -368,12 +368,6 @@ export class SendIt implements INodeType {
             value: 'reply',
             description: 'Reply to an inbox thread',
             action: 'Reply to a thread',
-          },
-          {
-            name: 'Get Thread',
-            value: 'getThread',
-            description: 'Get a single inbox thread with messages',
-            action: 'Get an inbox thread',
           },
           {
             name: 'Update Status',
@@ -392,16 +386,9 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['listening'] } },
         options: [
           {
-            name: 'Refresh',
-            value: 'refresh',
-            description: 'Trigger a refresh of social listening data for tracked keywords',
-            action: 'Refresh social listening data',
-          },
-          {
-            name: 'List Keywords',
-            value: 'listKeywords',
-            description: 'List tracked listening keywords',
-            action: 'List listening keywords',
+            name: 'Archive Mentions',
+            value: 'archiveMentions',
+            action: 'Archive listening mentions',
           },
           {
             name: 'Create Keyword',
@@ -410,28 +397,21 @@ export class SendIt implements INodeType {
             action: 'Create listening keyword',
           },
           {
-            name: 'Get Keyword',
-            value: 'getKeyword',
-            description: 'Get listening keyword by ID',
-            action: 'Get listening keyword',
-          },
-          {
-            name: 'Update Keyword',
-            value: 'updateKeyword',
-            description: 'Update listening keyword',
-            action: 'Update listening keyword',
-          },
-          {
             name: 'Delete Keyword',
             value: 'deleteKeyword',
             description: 'Delete listening keyword',
             action: 'Delete listening keyword',
           },
           {
-            name: 'List Mentions',
-            value: 'listMentions',
-            description: 'List mentions',
-            action: 'List listening mentions',
+            name: 'Dismiss Alerts',
+            value: 'dismissAlerts',
+            action: 'Dismiss listening alerts',
+          },
+          {
+            name: 'Get Keyword',
+            value: 'getKeyword',
+            description: 'Get listening keyword by ID',
+            action: 'Get listening keyword',
           },
           {
             name: 'Get Mention',
@@ -440,16 +420,10 @@ export class SendIt implements INodeType {
             action: 'Get listening mention',
           },
           {
-            name: 'Mark Mentions Read',
-            value: 'markMentionsRead',
-            description: 'Mark mentions as read',
-            action: 'Mark listening mentions as read',
-          },
-          {
-            name: 'Archive Mentions',
-            value: 'archiveMentions',
-            description: 'Archive mentions',
-            action: 'Archive listening mentions',
+            name: 'Get Summary',
+            value: 'getSummary',
+            description: 'Get listening summary',
+            action: 'Get listening summary',
           },
           {
             name: 'List Alerts',
@@ -458,22 +432,39 @@ export class SendIt implements INodeType {
             action: 'List listening alerts',
           },
           {
+            name: 'List Keywords',
+            value: 'listKeywords',
+            description: 'List tracked listening keywords',
+            action: 'List listening keywords',
+          },
+          {
+            name: 'List Mentions',
+            value: 'listMentions',
+            action: 'List listening mentions',
+          },
+          {
             name: 'Mark Alerts Read',
             value: 'markAlertsRead',
             description: 'Mark alerts as read',
             action: 'Mark listening alerts as read',
           },
           {
-            name: 'Dismiss Alerts',
-            value: 'dismissAlerts',
-            description: 'Dismiss alerts',
-            action: 'Dismiss listening alerts',
+            name: 'Mark Mentions Read',
+            value: 'markMentionsRead',
+            description: 'Mark mentions as read',
+            action: 'Mark listening mentions as read',
           },
           {
-            name: 'Get Summary',
-            value: 'getSummary',
-            description: 'Get listening summary',
-            action: 'Get listening summary',
+            name: 'Refresh',
+            value: 'refresh',
+            description: 'Trigger a refresh of social listening data for tracked keywords',
+            action: 'Refresh social listening data',
+          },
+          {
+            name: 'Update Keyword',
+            value: 'updateKeyword',
+            description: 'Update listening keyword',
+            action: 'Update listening keyword',
           },
         ],
         default: 'refresh',
@@ -508,16 +499,16 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['meta'] } },
         options: [
           {
+            name: 'Get Best Times',
+            value: 'getBestTimes',
+            description: 'Get optimal posting times for a platform',
+            action: 'Get best times to post',
+          },
+          {
             name: 'Get Capabilities',
             value: 'getCapabilities',
             description: 'Get supported platform capabilities',
             action: 'Get capabilities',
-          },
-          {
-            name: 'Get Requirements',
-            value: 'getRequirements',
-            description: 'Get content requirements for a platform',
-            action: 'Get platform requirements',
           },
           {
             name: 'Get Platform Settings Schema',
@@ -526,10 +517,10 @@ export class SendIt implements INodeType {
             action: 'Get platform settings schema',
           },
           {
-            name: 'Get Best Times',
-            value: 'getBestTimes',
-            description: 'Get optimal posting times for a platform',
-            action: 'Get best times to post',
+            name: 'Get Requirements',
+            value: 'getRequirements',
+            description: 'Get content requirements for a platform',
+            action: 'Get platform requirements',
           },
           {
             name: 'Get Webhook Events Catalog',
@@ -569,13 +560,13 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['library'] } },
         options: [
-          { name: 'List', value: 'list', action: 'List library items' },
           { name: 'Create', value: 'create', action: 'Create library item' },
-          { name: 'Get', value: 'get', action: 'Get library item' },
-          { name: 'Update', value: 'update', action: 'Update library item' },
           { name: 'Delete', value: 'delete', action: 'Delete library item' },
+          { name: 'Get', value: 'get', action: 'Get library item' },
+          { name: 'List', value: 'list', action: 'List library items' },
           { name: 'List Categories', value: 'listCategories', action: 'List library categories' },
           { name: 'List Tags', value: 'listTags', action: 'List library tags' },
+          { name: 'Update', value: 'update', action: 'Update library item' },
         ],
         default: 'list',
       },
@@ -586,8 +577,8 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['approvals'] } },
         options: [
-          { name: 'List', value: 'list', action: 'List approvals' },
           { name: 'Approve', value: 'approve', action: 'Approve post' },
+          { name: 'List', value: 'list', action: 'List approvals' },
           { name: 'Reject', value: 'reject', action: 'Reject post' },
         ],
         default: 'list',
@@ -599,15 +590,15 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['bulkSchedule'] } },
         options: [
-          { name: 'List Imports', value: 'listImports', action: 'List bulk imports' },
-          { name: 'Get Import', value: 'getImport', action: 'Get bulk import' },
-          { name: 'Validate CSV', value: 'validateCsv', action: 'Validate CSV payload' },
-          { name: 'Import CSV', value: 'importCsv', action: 'Import CSV payload' },
           {
             name: 'Download Template',
             value: 'downloadTemplate',
             action: 'Download bulk schedule template',
           },
+          { name: 'Get Import', value: 'getImport', action: 'Get bulk import' },
+          { name: 'Import CSV', value: 'importCsv', action: 'Import CSV payload' },
+          { name: 'List Imports', value: 'listImports', action: 'List bulk imports' },
+          { name: 'Validate CSV', value: 'validateCsv', action: 'Validate CSV payload' },
         ],
         default: 'listImports',
       },
@@ -619,11 +610,6 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['connect'] } },
         options: [
           {
-            name: 'Get Connect Action',
-            value: 'getConnectAction',
-            action: 'Get connect action for platform',
-          },
-          {
             name: 'Connect Token',
             value: 'connectToken',
             action: 'Connect with token credentials',
@@ -632,6 +618,11 @@ export class SendIt implements INodeType {
             name: 'Connect Webhook',
             value: 'connectWebhook',
             action: 'Connect with webhook credentials',
+          },
+          {
+            name: 'Get Connect Action',
+            value: 'getConnectAction',
+            action: 'Get connect action for platform',
           },
         ],
         default: 'getConnectAction',
@@ -643,24 +634,24 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['webhooks'] } },
         options: [
+          { name: 'Get', value: 'get', description: 'Get a webhook by ID', action: 'Get webhook' },
           {
             name: 'List',
             value: 'list',
             description: 'List all registered webhooks',
             action: 'List webhooks',
           },
-          { name: 'Get', value: 'get', description: 'Get a webhook by ID', action: 'Get webhook' },
-          {
-            name: 'Update',
-            value: 'update',
-            description: 'Update a webhook subscription',
-            action: 'Update webhook',
-          },
           {
             name: 'Test Webhook',
             value: 'testWebhook',
             description: 'Send a test delivery to a webhook',
             action: 'Send a test webhook delivery',
+          },
+          {
+            name: 'Update',
+            value: 'update',
+            description: 'Update a webhook subscription',
+            action: 'Update webhook',
           },
         ],
         default: 'list',
@@ -673,6 +664,12 @@ export class SendIt implements INodeType {
         displayOptions: { show: { resource: ['deadLetter'] } },
         options: [
           {
+            name: 'Discard',
+            value: 'discard',
+            description: 'Permanently discard a dead letter post',
+            action: 'Discard dead letter post',
+          },
+          {
             name: 'List',
             value: 'list',
             description: 'List posts in the dead letter queue',
@@ -683,12 +680,6 @@ export class SendIt implements INodeType {
             value: 'requeue',
             description: 'Retry a failed post from the dead letter queue',
             action: 'Requeue dead letter post',
-          },
-          {
-            name: 'Discard',
-            value: 'discard',
-            description: 'Permanently discard a dead letter post',
-            action: 'Discard dead letter post',
           },
         ],
         default: 'list',
@@ -823,14 +814,14 @@ export class SendIt implements INodeType {
         description: 'When to publish the post',
       },
       {
-        displayName: 'Scheduled Post',
+        displayName: 'Scheduled Post Name or ID',
         name: 'scheduleId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getScheduledPosts' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['scheduledPost'], operation: ['delete', 'trigger'] } },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Platform Filter',
@@ -842,14 +833,14 @@ export class SendIt implements INodeType {
         description: 'Filter scheduled posts by platform',
       },
       {
-        displayName: 'Platform',
+        displayName: 'Platform Name or ID',
         name: 'analyticsPlatform',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getConnectedPlatforms' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['analytics'], operation: ['getAnalytics'] } },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Additional Options',
@@ -862,18 +853,23 @@ export class SendIt implements INodeType {
         },
         options: [
           {
-            displayName: 'Media URLs (for carousel)',
-            name: 'mediaUrls',
-            type: 'string',
-            default: '',
-            description: 'Comma-separated URLs for carousel posts',
+            displayName: 'Facebook Mode',
+            name: 'facebookMode',
+            type: 'options',
+            options: [
+              { name: 'Auto (Try Reels First)', value: 'auto' },
+              { name: 'Reel', value: 'reel' },
+              { name: 'Feed Video', value: 'feed' },
+            ],
+            default: 'auto',
+            description: 'How to publish videos to Facebook',
           },
           {
             displayName: 'Media Type',
             name: 'mediaType',
             type: 'options',
             options: [
-              { name: 'Auto-detect', value: 'auto' },
+              { name: 'Auto-Detect', value: 'auto' },
               { name: 'Image', value: 'image' },
               { name: 'Video', value: 'video' },
             ],
@@ -881,16 +877,18 @@ export class SendIt implements INodeType {
             description: 'Specify the media type',
           },
           {
-            displayName: 'Facebook Mode',
-            name: 'facebookMode',
-            type: 'options',
-            options: [
-              { name: 'Auto (try Reels first)', value: 'auto' },
-              { name: 'Reel', value: 'reel' },
-              { name: 'Feed Video', value: 'feed' },
-            ],
-            default: 'auto',
-            description: 'How to publish videos to Facebook',
+            displayName: 'Media URLs (for Carousel)',
+            name: 'mediaUrls',
+            type: 'string',
+            default: '',
+            description: 'Comma-separated URLs for carousel posts',
+          },
+          {
+            displayName: 'Pinterest Board ID',
+            name: 'pinterestBoardId',
+            type: 'string',
+            default: '',
+            description: 'Pinterest board ID to pin to',
           },
           {
             displayName: 'YouTube Mode',
@@ -903,13 +901,6 @@ export class SendIt implements INodeType {
             ],
             default: 'auto',
             description: 'How to publish videos to YouTube',
-          },
-          {
-            displayName: 'Pinterest Board ID',
-            name: 'pinterestBoardId',
-            type: 'string',
-            default: '',
-            description: 'Pinterest board ID to pin to',
           },
         ],
       },
@@ -924,29 +915,42 @@ export class SendIt implements INodeType {
         },
         options: [
           {
+            displayName: 'Call To Action',
+            name: 'callToAction',
+            type: 'string',
+            default: '',
+            description: 'Call-to-action to include in content',
+          },
+          {
+            displayName: 'Facebook Mode',
+            name: 'facebookMode',
+            type: 'options',
+            options: [
+              { name: 'Auto (Try Reels First)', value: 'auto' },
+              { name: 'Reel', value: 'reel' },
+              { name: 'Feed Video', value: 'feed' },
+            ],
+            default: 'auto',
+            description: 'How to publish videos to Facebook',
+          },
+          {
             displayName: 'Hashtags',
             name: 'hashtags',
             type: 'options',
             options: [
               { name: 'Platform Default', value: 'platform_auto' },
-              { name: 'On (include hashtags)', value: 'on' },
-              { name: 'Off (no hashtags)', value: 'off' },
+              { name: 'On (Include Hashtags)', value: 'on' },
+              { name: 'Off (No Hashtags)', value: 'off' },
             ],
             default: 'platform_auto',
             description: 'Hashtag generation mode',
           },
           {
-            displayName: 'Tone',
-            name: 'tone',
-            type: 'options',
-            options: [
-              { name: 'Professional', value: 'professional' },
-              { name: 'Casual', value: 'casual' },
-              { name: 'Energetic', value: 'energetic' },
-              { name: 'Informative', value: 'informative' },
-            ],
-            default: 'professional',
-            description: 'Content tone',
+            displayName: 'Strict AI',
+            name: 'strictAi',
+            type: 'boolean',
+            default: false,
+            description: 'Whether to fail if AI generation fails (otherwise use fallback templates)',
           },
           {
             displayName: 'Style',
@@ -962,30 +966,17 @@ export class SendIt implements INodeType {
             description: 'Content style',
           },
           {
-            displayName: 'Call To Action',
-            name: 'callToAction',
-            type: 'string',
-            default: '',
-            description: 'Call-to-action to include in content',
-          },
-          {
-            displayName: 'Strict AI',
-            name: 'strictAi',
-            type: 'boolean',
-            default: false,
-            description: 'Fail if AI generation fails (otherwise use fallback templates)',
-          },
-          {
-            displayName: 'Facebook Mode',
-            name: 'facebookMode',
+            displayName: 'Tone',
+            name: 'tone',
             type: 'options',
             options: [
-              { name: 'Auto (try Reels first)', value: 'auto' },
-              { name: 'Reel', value: 'reel' },
-              { name: 'Feed Video', value: 'feed' },
+              { name: 'Professional', value: 'professional' },
+              { name: 'Casual', value: 'casual' },
+              { name: 'Energetic', value: 'energetic' },
+              { name: 'Informative', value: 'informative' },
             ],
-            default: 'auto',
-            description: 'How to publish videos to Facebook',
+            default: 'professional',
+            description: 'Content tone',
           },
           {
             displayName: 'YouTube Mode',
@@ -1058,7 +1049,7 @@ export class SendIt implements INodeType {
 
       // ===== Brand voice fields =====
       {
-        displayName: 'Brand Voice',
+        displayName: 'Brand Voice Name or ID',
         name: 'brandVoiceId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getBrandVoices' },
@@ -1067,7 +1058,7 @@ export class SendIt implements INodeType {
         displayOptions: {
           show: { resource: ['brandVoice'], operation: ['get', 'update', 'delete'] },
         },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Voice Name',
@@ -1175,14 +1166,14 @@ export class SendIt implements INodeType {
         description: 'Optional campaign end date/time (ISO 8601)',
       },
       {
-        displayName: 'Campaign',
+        displayName: 'Campaign Name or ID',
         name: 'campaignId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getCampaigns' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['campaign'], operation: ['schedule'] } },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
 
       // ===== Inbox fields =====
@@ -1201,10 +1192,10 @@ export class SendIt implements INodeType {
         type: 'options',
         options: [
           { name: 'All Statuses', value: '' },
+          { name: 'Archived', value: 'archived' },
+          { name: 'Closed', value: 'closed' },
           { name: 'Open', value: 'open' },
           { name: 'Replied', value: 'replied' },
-          { name: 'Closed', value: 'closed' },
-          { name: 'Archived', value: 'archived' },
         ],
         default: '',
         displayOptions: { show: { resource: ['inbox'], operation: ['list'] } },
@@ -1220,7 +1211,7 @@ export class SendIt implements INodeType {
         description: 'Maximum number of threads to return (1-50)',
       },
       {
-        displayName: 'Inbox Thread',
+        displayName: 'Inbox Thread Name or ID',
         name: 'inboxThreadId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getInboxThreads' },
@@ -1232,7 +1223,7 @@ export class SendIt implements INodeType {
             operation: ['reply', 'getThread', 'updateStatus'],
           },
         },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Reply Message',
@@ -1249,10 +1240,10 @@ export class SendIt implements INodeType {
         name: 'inboxThreadStatus',
         type: 'options',
         options: [
+          { name: 'Archived', value: 'archived' },
+          { name: 'Closed', value: 'closed' },
           { name: 'Open', value: 'open' },
           { name: 'Replied', value: 'replied' },
-          { name: 'Closed', value: 'closed' },
-          { name: 'Archived', value: 'archived' },
         ],
         default: 'open',
         required: true,
@@ -1284,7 +1275,7 @@ export class SendIt implements INodeType {
         description: 'Comma-separated keyword IDs to refresh',
       },
       {
-        displayName: 'Listening Keyword',
+        displayName: 'Listening Keyword Name or ID',
         name: 'listeningKeywordId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getListeningKeywords' },
@@ -1296,7 +1287,7 @@ export class SendIt implements INodeType {
             operation: ['getKeyword', 'updateKeyword', 'deleteKeyword'],
           },
         },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Keyword',
@@ -1314,9 +1305,9 @@ export class SendIt implements INodeType {
         options: [
           { name: 'Brand', value: 'brand' },
           { name: 'Competitor', value: 'competitor' },
-          { name: 'Product', value: 'product' },
-          { name: 'Hashtag', value: 'hashtag' },
           { name: 'Custom', value: 'custom' },
+          { name: 'Hashtag', value: 'hashtag' },
+          { name: 'Product', value: 'product' },
         ],
         default: 'brand',
         displayOptions: {
@@ -1333,7 +1324,7 @@ export class SendIt implements INodeType {
         type: 'boolean',
         default: true,
         displayOptions: { show: { resource: ['listening'], operation: ['listKeywords'] } },
-        description: 'Only include active keywords',
+        description: 'Whether to only include active keywords',
       },
       {
         displayName: 'Notify Email',
@@ -1343,7 +1334,7 @@ export class SendIt implements INodeType {
         displayOptions: {
           show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] },
         },
-        description: 'Enable email notifications',
+        description: 'Whether to enable email notifications',
       },
       {
         displayName: 'Notify Webhook',
@@ -1353,7 +1344,7 @@ export class SendIt implements INodeType {
         displayOptions: {
           show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] },
         },
-        description: 'Enable webhook notifications',
+        description: 'Whether to enable webhook notifications',
       },
       {
         displayName: 'Webhook URL',
@@ -1371,9 +1362,9 @@ export class SendIt implements INodeType {
         type: 'options',
         options: [
           { name: 'Any', value: '' },
-          { name: 'Positive', value: 'positive' },
-          { name: 'Neutral', value: 'neutral' },
           { name: 'Negative', value: 'negative' },
+          { name: 'Neutral', value: 'neutral' },
+          { name: 'Positive', value: 'positive' },
         ],
         default: '',
         displayOptions: {
@@ -1382,7 +1373,6 @@ export class SendIt implements INodeType {
             operation: ['createKeyword', 'updateKeyword', 'listMentions'],
           },
         },
-        description: 'Sentiment filter',
       },
       {
         displayName: 'Mention ID',
@@ -1391,7 +1381,6 @@ export class SendIt implements INodeType {
         default: '',
         required: true,
         displayOptions: { show: { resource: ['listening'], operation: ['getMention'] } },
-        description: 'Mention ID',
       },
       {
         displayName: 'Mention IDs',
@@ -1410,7 +1399,7 @@ export class SendIt implements INodeType {
         type: 'boolean',
         default: false,
         displayOptions: { show: { resource: ['listening'], operation: ['listAlerts'] } },
-        description: 'Only include unread alerts',
+        description: 'Whether to only include unread alerts',
       },
       {
         displayName: 'Alert Priority',
@@ -1418,10 +1407,10 @@ export class SendIt implements INodeType {
         type: 'options',
         options: [
           { name: 'Any', value: '' },
+          { name: 'Critical', value: 'critical' },
+          { name: 'High', value: 'high' },
           { name: 'Low', value: 'low' },
           { name: 'Medium', value: 'medium' },
-          { name: 'High', value: 'high' },
-          { name: 'Critical', value: 'critical' },
         ],
         default: '',
         displayOptions: { show: { resource: ['listening'], operation: ['listAlerts'] } },
@@ -1480,9 +1469,9 @@ export class SendIt implements INodeType {
         name: 'listeningIsArchived',
         type: 'options',
         options: [
+          { name: 'Active', value: 'false' },
           { name: 'Any', value: '' },
           { name: 'Archived', value: 'true' },
-          { name: 'Active', value: 'false' },
         ],
         default: '',
         displayOptions: { show: { resource: ['listening'], operation: ['listMentions'] } },
@@ -1514,10 +1503,10 @@ export class SendIt implements INodeType {
         name: 'aiMediaProvider',
         type: 'options',
         options: [
-          { name: 'Sora', value: 'sora' },
-          { name: 'Runway', value: 'runway' },
-          { name: 'Pika', value: 'pika' },
           { name: 'Adobe Express', value: 'adobe-express' },
+          { name: 'Pika', value: 'pika' },
+          { name: 'Runway', value: 'runway' },
+          { name: 'Sora', value: 'sora' },
         ],
         default: 'sora',
         required: true,
@@ -1609,14 +1598,14 @@ export class SendIt implements INodeType {
 
       // ===== Library fields =====
       {
-        displayName: 'Library Item',
+        displayName: 'Library Item Name or ID',
         name: 'libraryItemId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getLibraryItems' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['library'], operation: ['get', 'update', 'delete'] } },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Title',
@@ -1643,8 +1632,8 @@ export class SendIt implements INodeType {
         type: 'options',
         options: [
           { name: 'Draft', value: 'draft' },
-          { name: 'Template', value: 'template' },
           { name: 'Evergreen', value: 'evergreen' },
+          { name: 'Template', value: 'template' },
         ],
         default: 'draft',
         displayOptions: {
@@ -1713,7 +1702,7 @@ export class SendIt implements INodeType {
         type: 'boolean',
         default: false,
         displayOptions: { show: { resource: ['library'], operation: ['create', 'update'] } },
-        description: 'Enable evergreen republishing',
+        description: 'Whether to enable evergreen republishing',
       },
       {
         displayName: 'Evergreen Interval Days',
@@ -1798,7 +1787,7 @@ export class SendIt implements INodeType {
         type: 'boolean',
         default: false,
         displayOptions: { show: { resource: ['bulkSchedule'], operation: ['importCsv'] } },
-        description: 'Continue import even if some rows fail validation',
+        description: 'Whether to continue import even if some rows fail validation',
       },
 
       // ===== Connect fields =====
@@ -1848,7 +1837,7 @@ export class SendIt implements INodeType {
 
       // ===== Webhook fields =====
       {
-        displayName: 'Webhook',
+        displayName: 'Webhook Name or ID',
         name: 'webhookId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getWebhooks' },
@@ -1857,7 +1846,7 @@ export class SendIt implements INodeType {
         displayOptions: {
           show: { resource: ['webhooks'], operation: ['get', 'update', 'testWebhook'] },
         },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
       {
         displayName: 'Webhook URL',
@@ -1892,8 +1881,8 @@ export class SendIt implements INodeType {
         options: [
           { name: 'All Statuses', value: '' },
           { name: 'Dead', value: 'dead' },
-          { name: 'Requeued', value: 'requeued' },
           { name: 'Discarded', value: 'discarded' },
+          { name: 'Requeued', value: 'requeued' },
         ],
         default: '',
         displayOptions: { show: { resource: ['deadLetter'], operation: ['list'] } },
@@ -1909,14 +1898,14 @@ export class SendIt implements INodeType {
         description: 'Maximum number of dead letter posts to return',
       },
       {
-        displayName: 'Dead Letter Post',
+        displayName: 'Dead Letter Post Name or ID',
         name: 'deadLetterId',
         type: 'options',
         typeOptions: { loadOptionsMethod: 'getDeadLetterPosts' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['deadLetter'], operation: ['requeue', 'discard'] } },
-        description: 'Choose from the list, or specify an ID using an expression.',
+        description: 'Choose from the list, or specify an ID using an expression. Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>.',
       },
 
       // ===== Audit log fields =====
@@ -2105,11 +2094,11 @@ export class SendIt implements INodeType {
         name: 'advancedMethod',
         type: 'options',
         options: [
-          { name: 'GET', value: 'GET' },
-          { name: 'POST', value: 'POST' },
-          { name: 'PATCH', value: 'PATCH' },
-          { name: 'PUT', value: 'PUT' },
           { name: 'DELETE', value: 'DELETE' },
+          { name: 'GET', value: 'GET' },
+          { name: 'PATCH', value: 'PATCH' },
+          { name: 'POST', value: 'POST' },
+          { name: 'PUT', value: 'PUT' },
         ],
         default: 'GET',
         required: true,
@@ -2148,16 +2137,16 @@ export class SendIt implements INodeType {
         name: 'advancedResponseMode',
         type: 'options',
         options: [
+          { name: 'Binary', value: 'binary' },
           { name: 'JSON', value: 'json' },
           { name: 'Text', value: 'text' },
-          { name: 'Binary', value: 'binary' },
         ],
         default: 'json',
         displayOptions: { show: { resource: ['advanced'], operation: ['apiRequest'] } },
         description: 'How to decode the response payload',
       },
       {
-        displayName: 'Request Timeout (ms)',
+        displayName: 'Request Timeout (Ms)',
         name: 'requestTimeoutMs',
         type: 'number',
         default: 30000,
@@ -2165,6 +2154,7 @@ export class SendIt implements INodeType {
         description: 'Request timeout in milliseconds',
       },
     ],
+		usableAsTool: true,
   };
 
   methods = {
@@ -2335,7 +2325,8 @@ export class SendIt implements INodeType {
           continue;
         }
 
-        throw error;
+        const message = error instanceof Error ? error.message : 'SendIt operation failed';
+        throw new NodeOperationError(this.getNode(), message);
       }
     }
 
