@@ -21,7 +21,7 @@ export const handleAiMedia: ResourceHandler = async (context, operation, i, opti
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -34,7 +34,7 @@ export const handleAiMedia: ResourceHandler = async (context, operation, i, opti
         method: 'GET' as IHttpRequestMethods,
         url: `/ai-media/${jobId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

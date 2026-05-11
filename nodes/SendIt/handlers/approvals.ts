@@ -14,7 +14,7 @@ export const handleApprovals: ResourceHandler = async (context, operation, i, op
         url: '/approvals',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -30,7 +30,7 @@ export const handleApprovals: ResourceHandler = async (context, operation, i, op
         body: { comment: comment || undefined },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -46,7 +46,7 @@ export const handleApprovals: ResourceHandler = async (context, operation, i, op
         body: { reason },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

@@ -16,7 +16,7 @@ export const handleDeadLetter: ResourceHandler = async (context, operation, i, o
         url: '/dead-letter',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -29,7 +29,7 @@ export const handleDeadLetter: ResourceHandler = async (context, operation, i, o
         url: `/dead-letter/${id}/requeue`,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -42,7 +42,7 @@ export const handleDeadLetter: ResourceHandler = async (context, operation, i, o
         url: `/dead-letter/${id}/discard`,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

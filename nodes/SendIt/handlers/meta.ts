@@ -3,7 +3,11 @@ import { sendRequest, type ResourceHandler } from '../helpers';
 
 export const handleMeta: ResourceHandler = async (context, operation, i, optionalHeaders) => {
   if (operation === 'getCapabilities') {
-    return sendRequest(context, { method: 'GET' as IHttpRequestMethods, url: '/capabilities' }, optionalHeaders);
+    return sendRequest(
+      context,
+      { method: 'GET' as IHttpRequestMethods, url: '/capabilities' },
+      optionalHeaders
+    );
   }
 
   if (operation === 'getRequirements') {
@@ -15,7 +19,7 @@ export const handleMeta: ResourceHandler = async (context, operation, i, optiona
         url: '/requirements',
         qs: { platform },
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -28,7 +32,7 @@ export const handleMeta: ResourceHandler = async (context, operation, i, optiona
         url: '/platforms/schema',
         qs: { platform },
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -42,7 +46,7 @@ export const handleMeta: ResourceHandler = async (context, operation, i, optiona
         url: '/best-times',
         qs: { platform, limit },
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -53,7 +57,7 @@ export const handleMeta: ResourceHandler = async (context, operation, i, optiona
         method: 'GET' as IHttpRequestMethods,
         url: '/webhooks/events-catalog',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -64,7 +68,7 @@ export const handleMeta: ResourceHandler = async (context, operation, i, optiona
         method: 'GET' as IHttpRequestMethods,
         url: '/webhooks/triggers',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

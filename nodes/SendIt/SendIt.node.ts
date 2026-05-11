@@ -1,6 +1,9 @@
 import {
   IExecuteFunctions,
+  IHttpRequestMethods,
+  ILoadOptionsFunctions,
   INodeExecutionData,
+  INodePropertyOptions,
   INodeType,
   INodeTypeDescription,
   NodeOperationError,
@@ -45,27 +48,27 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         options: [
           { name: 'Post', value: 'post' },
-          { name: 'AI', value: 'ai' },
-          { name: 'Media', value: 'media' },
           { name: 'Scheduled Post', value: 'scheduledPost' },
-          { name: 'Account', value: 'account' },
-          { name: 'Validation', value: 'validation' },
-          { name: 'Analytics', value: 'analytics' },
-          { name: 'Brand Voice', value: 'brandVoice' },
-          { name: 'Campaign', value: 'campaign' },
+          { name: 'Media', value: 'media' },
+          { name: 'AI', value: 'ai' },
+          { name: 'AI Media', value: 'aiMedia' },
+          { name: 'Content Score', value: 'contentScore' },
           { name: 'Inbox', value: 'inbox' },
           { name: 'Listening', value: 'listening' },
-          { name: 'AI Media', value: 'aiMedia' },
-          { name: 'Meta', value: 'meta' },
-          { name: 'Content Score', value: 'contentScore' },
+          { name: 'Account', value: 'account' },
           { name: 'Library', value: 'library' },
+          { name: 'Brand Voice', value: 'brandVoice' },
+          { name: 'Campaign', value: 'campaign' },
           { name: 'Approvals', value: 'approvals' },
-          { name: 'Bulk Schedule', value: 'bulkSchedule' },
-          { name: 'Connect', value: 'connect' },
+          { name: 'Analytics', value: 'analytics' },
+          { name: 'Validation', value: 'validation' },
+          { name: 'Conversions', value: 'conversions' },
           { name: 'Webhooks', value: 'webhooks' },
           { name: 'Dead Letter', value: 'deadLetter' },
           { name: 'Audit Log', value: 'auditLog' },
-          { name: 'Conversions', value: 'conversions' },
+          { name: 'Bulk Schedule', value: 'bulkSchedule' },
+          { name: 'Connect', value: 'connect' },
+          { name: 'Meta', value: 'meta' },
           { name: 'Advanced', value: 'advanced' },
         ],
         default: 'post',
@@ -84,6 +87,44 @@ export class SendIt implements INodeType {
         default: '',
         description: 'Optional idempotency key. Sent as Idempotency-Key header when provided',
       },
+      {
+        displayName:
+          'Publishing operations are rate-limited to 50 requests per minute per API key.',
+        name: 'publishRateNotice',
+        type: 'notice',
+        default: '',
+        displayOptions: { show: { resource: ['post'], operation: ['publish', 'publishAi'] } },
+      },
+      {
+        displayName: 'AI content generation may take 5–15 seconds depending on prompt complexity.',
+        name: 'aiGenerateNotice',
+        type: 'notice',
+        default: '',
+        displayOptions: { show: { resource: ['ai'], operation: ['generate'] } },
+      },
+      {
+        displayName:
+          'AI Media generation is asynchronous. This returns a job ID — use Get Status to poll for completion.',
+        name: 'aiMediaAsyncNotice',
+        type: 'notice',
+        default: '',
+        displayOptions: { show: { resource: ['aiMedia'], operation: ['create'] } },
+      },
+      {
+        displayName: 'Campaign planning uses AI and may take 15–30 seconds for larger campaigns.',
+        name: 'campaignPlanNotice',
+        type: 'notice',
+        default: '',
+        displayOptions: { show: { resource: ['campaign'], operation: ['plan'] } },
+      },
+      {
+        displayName:
+          'Requeued posts will be retried with exponential backoff to the original target platforms.',
+        name: 'deadLetterRequeueNotice',
+        type: 'notice',
+        default: '',
+        displayOptions: { show: { resource: ['deadLetter'], operation: ['requeue'] } },
+      },
 
       // ===== Operations by resource =====
       {
@@ -93,8 +134,18 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['post'] } },
         options: [
-          { name: 'Publish', value: 'publish', description: 'Publish content to social media platforms immediately', action: 'Publish a post' },
-          { name: 'Publish with AI', value: 'publishAi', description: 'Generate content with AI and publish to platforms', action: 'Publish with AI-generated content' },
+          {
+            name: 'Publish',
+            value: 'publish',
+            description: 'Publish content to social media platforms immediately',
+            action: 'Publish a post',
+          },
+          {
+            name: 'Publish with AI',
+            value: 'publishAi',
+            description: 'Generate content with AI and publish to platforms',
+            action: 'Publish with AI-generated content',
+          },
         ],
         default: 'publish',
       },
@@ -105,10 +156,30 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['ai'] } },
         options: [
-          { name: 'Generate Content', value: 'generate', description: 'Generate platform-specific content from media or prompt', action: 'Generate AI content' },
-          { name: 'Reply Suggestions', value: 'replySuggestions', description: 'Get AI-drafted reply suggestions for a mention', action: 'Get AI reply suggestions' },
-          { name: 'Mention Summary', value: 'mentionSummary', description: 'Generate an AI summary of recent mentions', action: 'Summarize mentions with AI' },
-          { name: 'Feedback', value: 'feedback', description: 'Rate AI-generated content quality', action: 'Submit AI feedback' },
+          {
+            name: 'Generate Content',
+            value: 'generate',
+            description: 'Generate platform-specific content from media or prompt',
+            action: 'Generate AI content',
+          },
+          {
+            name: 'Reply Suggestions',
+            value: 'replySuggestions',
+            description: 'Get AI-drafted reply suggestions for a mention',
+            action: 'Get AI reply suggestions',
+          },
+          {
+            name: 'Mention Summary',
+            value: 'mentionSummary',
+            description: 'Generate an AI summary of recent mentions',
+            action: 'Summarize mentions with AI',
+          },
+          {
+            name: 'Feedback',
+            value: 'feedback',
+            description: 'Rate AI-generated content quality',
+            action: 'Submit AI feedback',
+          },
         ],
         default: 'generate',
       },
@@ -119,7 +190,12 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['media'] } },
         options: [
-          { name: 'Upload', value: 'upload', description: 'Upload media file to get a URL', action: 'Upload media' },
+          {
+            name: 'Upload',
+            value: 'upload',
+            description: 'Upload media file to get a URL',
+            action: 'Upload media',
+          },
         ],
         default: 'upload',
       },
@@ -130,10 +206,30 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['scheduledPost'] } },
         options: [
-          { name: 'Create', value: 'create', description: 'Schedule a post for future publishing', action: 'Schedule a post' },
-          { name: 'Get All', value: 'getAll', description: 'Get all scheduled posts', action: 'Get all scheduled posts' },
-          { name: 'Delete', value: 'delete', description: 'Cancel a scheduled post', action: 'Cancel a scheduled post' },
-          { name: 'Trigger Now', value: 'trigger', description: 'Publish a scheduled post immediately', action: 'Trigger scheduled post now' },
+          {
+            name: 'Create',
+            value: 'create',
+            description: 'Schedule a post for future publishing',
+            action: 'Schedule a post',
+          },
+          {
+            name: 'Get All',
+            value: 'getAll',
+            description: 'Get all scheduled posts',
+            action: 'Get all scheduled posts',
+          },
+          {
+            name: 'Delete',
+            value: 'delete',
+            description: 'Cancel a scheduled post',
+            action: 'Cancel a scheduled post',
+          },
+          {
+            name: 'Trigger Now',
+            value: 'trigger',
+            description: 'Publish a scheduled post immediately',
+            action: 'Trigger scheduled post now',
+          },
         ],
         default: 'create',
       },
@@ -143,7 +239,14 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['account'] } },
-        options: [{ name: 'Get All', value: 'getAll', description: 'Get all connected accounts', action: 'Get all accounts' }],
+        options: [
+          {
+            name: 'Get All',
+            value: 'getAll',
+            description: 'Get all connected accounts',
+            action: 'Get all accounts',
+          },
+        ],
         default: 'getAll',
       },
       {
@@ -152,7 +255,15 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['validation'] } },
-        options: [{ name: 'Validate', value: 'validate', description: 'Validate content before publishing', action: 'Validate content' }],
+        options: [
+          {
+            name: 'Validate',
+            value: 'validate',
+            description:
+              'Validate content against platform rules before publishing (character limits, media requirements)',
+            action: 'Validate content',
+          },
+        ],
         default: 'validate',
       },
       {
@@ -161,7 +272,14 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['analytics'] } },
-        options: [{ name: 'Get Analytics', value: 'getAnalytics', description: 'Get engagement analytics for posts on a platform', action: 'Get analytics for a platform' }],
+        options: [
+          {
+            name: 'Get Analytics',
+            value: 'getAnalytics',
+            description: 'Get engagement analytics for posts on a platform',
+            action: 'Get analytics for a platform',
+          },
+        ],
         default: 'getAnalytics',
       },
       {
@@ -171,11 +289,36 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['brandVoice'] } },
         options: [
-          { name: 'Create', value: 'create', description: 'Create a new brand voice profile', action: 'Create a brand voice' },
-          { name: 'List', value: 'list', description: 'List all brand voice profiles', action: 'List brand voices' },
-          { name: 'Get', value: 'get', description: 'Get a single brand voice profile', action: 'Get a brand voice' },
-          { name: 'Update', value: 'update', description: 'Update a brand voice profile', action: 'Update a brand voice' },
-          { name: 'Delete', value: 'delete', description: 'Delete a brand voice profile', action: 'Delete a brand voice' },
+          {
+            name: 'Create',
+            value: 'create',
+            description: 'Create a new brand voice profile',
+            action: 'Create a brand voice',
+          },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List all brand voice profiles',
+            action: 'List brand voices',
+          },
+          {
+            name: 'Get',
+            value: 'get',
+            description: 'Get a single brand voice profile',
+            action: 'Get a brand voice',
+          },
+          {
+            name: 'Update',
+            value: 'update',
+            description: 'Update a brand voice profile',
+            action: 'Update a brand voice',
+          },
+          {
+            name: 'Delete',
+            value: 'delete',
+            description: 'Delete a brand voice profile',
+            action: 'Delete a brand voice',
+          },
         ],
         default: 'create',
       },
@@ -186,9 +329,24 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['campaign'] } },
         options: [
-          { name: 'Plan', value: 'plan', description: 'Create a new campaign with AI-planned posts', action: 'Plan a campaign' },
-          { name: 'List', value: 'list', description: 'List all campaigns', action: 'List campaigns' },
-          { name: 'Schedule', value: 'schedule', description: 'Schedule all posts in a campaign', action: 'Schedule a campaign' },
+          {
+            name: 'Plan',
+            value: 'plan',
+            description: 'Create a new campaign with AI-planned posts',
+            action: 'Plan a campaign',
+          },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List all campaigns',
+            action: 'List campaigns',
+          },
+          {
+            name: 'Schedule',
+            value: 'schedule',
+            description: 'Schedule all posts in a campaign',
+            action: 'Schedule a campaign',
+          },
         ],
         default: 'plan',
       },
@@ -199,10 +357,30 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['inbox'] } },
         options: [
-          { name: 'List', value: 'list', description: 'List inbox threads', action: 'List inbox threads' },
-          { name: 'Reply', value: 'reply', description: 'Reply to an inbox thread', action: 'Reply to a thread' },
-          { name: 'Get Thread', value: 'getThread', description: 'Get a single inbox thread with messages', action: 'Get an inbox thread' },
-          { name: 'Update Status', value: 'updateStatus', description: 'Update thread status', action: 'Update inbox thread status' },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List inbox threads',
+            action: 'List inbox threads',
+          },
+          {
+            name: 'Reply',
+            value: 'reply',
+            description: 'Reply to an inbox thread',
+            action: 'Reply to a thread',
+          },
+          {
+            name: 'Get Thread',
+            value: 'getThread',
+            description: 'Get a single inbox thread with messages',
+            action: 'Get an inbox thread',
+          },
+          {
+            name: 'Update Status',
+            value: 'updateStatus',
+            description: 'Update thread status',
+            action: 'Update inbox thread status',
+          },
         ],
         default: 'list',
       },
@@ -213,20 +391,90 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['listening'] } },
         options: [
-          { name: 'Refresh', value: 'refresh', description: 'Trigger a social listening refresh', action: 'Refresh social listening data' },
-          { name: 'List Keywords', value: 'listKeywords', description: 'List tracked listening keywords', action: 'List listening keywords' },
-          { name: 'Create Keyword', value: 'createKeyword', description: 'Create a listening keyword', action: 'Create listening keyword' },
-          { name: 'Get Keyword', value: 'getKeyword', description: 'Get listening keyword by ID', action: 'Get listening keyword' },
-          { name: 'Update Keyword', value: 'updateKeyword', description: 'Update listening keyword', action: 'Update listening keyword' },
-          { name: 'Delete Keyword', value: 'deleteKeyword', description: 'Delete listening keyword', action: 'Delete listening keyword' },
-          { name: 'List Mentions', value: 'listMentions', description: 'List mentions', action: 'List listening mentions' },
-          { name: 'Get Mention', value: 'getMention', description: 'Get mention by ID', action: 'Get listening mention' },
-          { name: 'Mark Mentions Read', value: 'markMentionsRead', description: 'Mark mentions as read', action: 'Mark listening mentions as read' },
-          { name: 'Archive Mentions', value: 'archiveMentions', description: 'Archive mentions', action: 'Archive listening mentions' },
-          { name: 'List Alerts', value: 'listAlerts', description: 'List listening alerts', action: 'List listening alerts' },
-          { name: 'Mark Alerts Read', value: 'markAlertsRead', description: 'Mark alerts as read', action: 'Mark listening alerts as read' },
-          { name: 'Dismiss Alerts', value: 'dismissAlerts', description: 'Dismiss alerts', action: 'Dismiss listening alerts' },
-          { name: 'Get Summary', value: 'getSummary', description: 'Get listening summary', action: 'Get listening summary' },
+          {
+            name: 'Refresh',
+            value: 'refresh',
+            description: 'Trigger a refresh of social listening data for tracked keywords',
+            action: 'Refresh social listening data',
+          },
+          {
+            name: 'List Keywords',
+            value: 'listKeywords',
+            description: 'List tracked listening keywords',
+            action: 'List listening keywords',
+          },
+          {
+            name: 'Create Keyword',
+            value: 'createKeyword',
+            description: 'Create a listening keyword',
+            action: 'Create listening keyword',
+          },
+          {
+            name: 'Get Keyword',
+            value: 'getKeyword',
+            description: 'Get listening keyword by ID',
+            action: 'Get listening keyword',
+          },
+          {
+            name: 'Update Keyword',
+            value: 'updateKeyword',
+            description: 'Update listening keyword',
+            action: 'Update listening keyword',
+          },
+          {
+            name: 'Delete Keyword',
+            value: 'deleteKeyword',
+            description: 'Delete listening keyword',
+            action: 'Delete listening keyword',
+          },
+          {
+            name: 'List Mentions',
+            value: 'listMentions',
+            description: 'List mentions',
+            action: 'List listening mentions',
+          },
+          {
+            name: 'Get Mention',
+            value: 'getMention',
+            description: 'Get mention by ID',
+            action: 'Get listening mention',
+          },
+          {
+            name: 'Mark Mentions Read',
+            value: 'markMentionsRead',
+            description: 'Mark mentions as read',
+            action: 'Mark listening mentions as read',
+          },
+          {
+            name: 'Archive Mentions',
+            value: 'archiveMentions',
+            description: 'Archive mentions',
+            action: 'Archive listening mentions',
+          },
+          {
+            name: 'List Alerts',
+            value: 'listAlerts',
+            description: 'List listening alerts',
+            action: 'List listening alerts',
+          },
+          {
+            name: 'Mark Alerts Read',
+            value: 'markAlertsRead',
+            description: 'Mark alerts as read',
+            action: 'Mark listening alerts as read',
+          },
+          {
+            name: 'Dismiss Alerts',
+            value: 'dismissAlerts',
+            description: 'Dismiss alerts',
+            action: 'Dismiss listening alerts',
+          },
+          {
+            name: 'Get Summary',
+            value: 'getSummary',
+            description: 'Get listening summary',
+            action: 'Get listening summary',
+          },
         ],
         default: 'refresh',
       },
@@ -237,8 +485,18 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['aiMedia'] } },
         options: [
-          { name: 'Create', value: 'create', description: 'Generate AI media (image or video)', action: 'Create AI media' },
-          { name: 'Get Status', value: 'getStatus', description: 'Get the status of an AI media generation job', action: 'Get AI media status' },
+          {
+            name: 'Create',
+            value: 'create',
+            description: 'Generate AI media (image or video)',
+            action: 'Create AI media',
+          },
+          {
+            name: 'Get Status',
+            value: 'getStatus',
+            description: 'Get the status of an AI media generation job',
+            action: 'Get AI media status',
+          },
         ],
         default: 'create',
       },
@@ -249,12 +507,42 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['meta'] } },
         options: [
-          { name: 'Get Capabilities', value: 'getCapabilities', description: 'Get supported platform capabilities', action: 'Get capabilities' },
-          { name: 'Get Requirements', value: 'getRequirements', description: 'Get content requirements for a platform', action: 'Get platform requirements' },
-          { name: 'Get Platform Settings Schema', value: 'getPlatformSettingsSchema', description: 'Get the settings schema for a platform', action: 'Get platform settings schema' },
-          { name: 'Get Best Times', value: 'getBestTimes', description: 'Get optimal posting times for a platform', action: 'Get best times to post' },
-          { name: 'Get Webhook Events Catalog', value: 'getWebhookEventsCatalog', description: 'Get all available webhook event types', action: 'Get webhook events catalog' },
-          { name: 'Get Webhook Triggers', value: 'getWebhookTriggers', description: 'Get configured webhook trigger schemas', action: 'Get webhook triggers' },
+          {
+            name: 'Get Capabilities',
+            value: 'getCapabilities',
+            description: 'Get supported platform capabilities',
+            action: 'Get capabilities',
+          },
+          {
+            name: 'Get Requirements',
+            value: 'getRequirements',
+            description: 'Get content requirements for a platform',
+            action: 'Get platform requirements',
+          },
+          {
+            name: 'Get Platform Settings Schema',
+            value: 'getPlatformSettingsSchema',
+            description: 'Get the settings schema for a platform',
+            action: 'Get platform settings schema',
+          },
+          {
+            name: 'Get Best Times',
+            value: 'getBestTimes',
+            description: 'Get optimal posting times for a platform',
+            action: 'Get best times to post',
+          },
+          {
+            name: 'Get Webhook Events Catalog',
+            value: 'getWebhookEventsCatalog',
+            description: 'Get all available webhook event types',
+            action: 'Get webhook events catalog',
+          },
+          {
+            name: 'Get Webhook Triggers',
+            value: 'getWebhookTriggers',
+            description: 'Get configured webhook trigger schemas',
+            action: 'Get webhook triggers',
+          },
         ],
         default: 'getCapabilities',
       },
@@ -264,7 +552,14 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['contentScore'] } },
-        options: [{ name: 'Score', value: 'score', description: 'Score content quality across platforms', action: 'Score content quality' }],
+        options: [
+          {
+            name: 'Score',
+            value: 'score',
+            description: 'Score content quality across platforms',
+            action: 'Score content quality',
+          },
+        ],
         default: 'score',
       },
       {
@@ -308,7 +603,11 @@ export class SendIt implements INodeType {
           { name: 'Get Import', value: 'getImport', action: 'Get bulk import' },
           { name: 'Validate CSV', value: 'validateCsv', action: 'Validate CSV payload' },
           { name: 'Import CSV', value: 'importCsv', action: 'Import CSV payload' },
-          { name: 'Download Template', value: 'downloadTemplate', action: 'Download bulk schedule template' },
+          {
+            name: 'Download Template',
+            value: 'downloadTemplate',
+            action: 'Download bulk schedule template',
+          },
         ],
         default: 'listImports',
       },
@@ -319,9 +618,21 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['connect'] } },
         options: [
-          { name: 'Get Connect Action', value: 'getConnectAction', action: 'Get connect action for platform' },
-          { name: 'Connect Token', value: 'connectToken', action: 'Connect with token credentials' },
-          { name: 'Connect Webhook', value: 'connectWebhook', action: 'Connect with webhook credentials' },
+          {
+            name: 'Get Connect Action',
+            value: 'getConnectAction',
+            action: 'Get connect action for platform',
+          },
+          {
+            name: 'Connect Token',
+            value: 'connectToken',
+            action: 'Connect with token credentials',
+          },
+          {
+            name: 'Connect Webhook',
+            value: 'connectWebhook',
+            action: 'Connect with webhook credentials',
+          },
         ],
         default: 'getConnectAction',
       },
@@ -332,10 +643,25 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['webhooks'] } },
         options: [
-          { name: 'List', value: 'list', description: 'List all registered webhooks', action: 'List webhooks' },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List all registered webhooks',
+            action: 'List webhooks',
+          },
           { name: 'Get', value: 'get', description: 'Get a webhook by ID', action: 'Get webhook' },
-          { name: 'Update', value: 'update', description: 'Update a webhook subscription', action: 'Update webhook' },
-          { name: 'Test Webhook', value: 'testWebhook', description: 'Send a test delivery to a webhook', action: 'Send a test webhook delivery' },
+          {
+            name: 'Update',
+            value: 'update',
+            description: 'Update a webhook subscription',
+            action: 'Update webhook',
+          },
+          {
+            name: 'Test Webhook',
+            value: 'testWebhook',
+            description: 'Send a test delivery to a webhook',
+            action: 'Send a test webhook delivery',
+          },
         ],
         default: 'list',
       },
@@ -346,9 +672,24 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['deadLetter'] } },
         options: [
-          { name: 'List', value: 'list', description: 'List posts in the dead letter queue', action: 'List dead letter posts' },
-          { name: 'Requeue', value: 'requeue', description: 'Retry a failed post from the dead letter queue', action: 'Requeue dead letter post' },
-          { name: 'Discard', value: 'discard', description: 'Permanently discard a dead letter post', action: 'Discard dead letter post' },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List posts in the dead letter queue',
+            action: 'List dead letter posts',
+          },
+          {
+            name: 'Requeue',
+            value: 'requeue',
+            description: 'Retry a failed post from the dead letter queue',
+            action: 'Requeue dead letter post',
+          },
+          {
+            name: 'Discard',
+            value: 'discard',
+            description: 'Permanently discard a dead letter post',
+            action: 'Discard dead letter post',
+          },
         ],
         default: 'list',
       },
@@ -359,7 +700,12 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['auditLog'] } },
         options: [
-          { name: 'List', value: 'list', description: 'List audit log entries', action: 'List audit log entries' },
+          {
+            name: 'List',
+            value: 'list',
+            description: 'List audit log entries',
+            action: 'List audit log entries',
+          },
         ],
         default: 'list',
       },
@@ -370,7 +716,12 @@ export class SendIt implements INodeType {
         noDataExpression: true,
         displayOptions: { show: { resource: ['conversions'] } },
         options: [
-          { name: 'Track', value: 'track', description: 'Track a conversion event', action: 'Track conversion' },
+          {
+            name: 'Track',
+            value: 'track',
+            description: 'Track a conversion event',
+            action: 'Track conversion',
+          },
         ],
         default: 'track',
       },
@@ -380,7 +731,14 @@ export class SendIt implements INodeType {
         type: 'options',
         noDataExpression: true,
         displayOptions: { show: { resource: ['advanced'] } },
-        options: [{ name: 'API Request', value: 'apiRequest', action: 'Run advanced API request' }],
+        options: [
+          {
+            name: 'API Request',
+            value: 'apiRequest',
+            description: 'Send a custom API request to any SendIt v1/v2 endpoint',
+            action: 'Run advanced API request',
+          },
+        ],
         default: 'apiRequest',
       },
 
@@ -398,7 +756,8 @@ export class SendIt implements INodeType {
             operation: ['publish', 'publishAi', 'create', 'validate', 'generate', 'score'],
           },
         },
-        description: 'Select platforms to publish to',
+        description:
+          'Select target platforms. Instagram and TikTok require media. Use Meta > Get Requirements to check platform-specific limits.',
       },
       {
         displayName: 'Text',
@@ -413,7 +772,8 @@ export class SendIt implements INodeType {
             operation: ['publish', 'create', 'validate', 'score'],
           },
         },
-        description: 'The text content of your post',
+        description:
+          'The text content of your post. Character limits vary by platform — use Meta > Get Requirements to check.',
       },
       {
         displayName: 'Media URL',
@@ -426,19 +786,8 @@ export class SendIt implements INodeType {
             operation: ['publish', 'publishAi', 'create', 'validate', 'generate', 'score'],
           },
         },
-        description: 'URL to an image or video (required for some platforms)',
-      },
-      {
-        displayName: 'Input Mode',
-        name: 'mediaInputMode',
-        type: 'options',
-        options: [
-          { name: 'Binary Data', value: 'binary' },
-          { name: 'File Path', value: 'filePath' },
-        ],
-        default: 'binary',
-        displayOptions: { show: { resource: ['media'], operation: ['upload'] } },
-        description: 'How to provide the media file',
+        description:
+          'URL to an image or video. Required for Instagram, TikTok, and Pinterest. Optional for LinkedIn, X, Threads, and others.',
       },
       {
         displayName: 'Binary Property',
@@ -449,32 +798,19 @@ export class SendIt implements INodeType {
           show: {
             resource: ['media'],
             operation: ['upload'],
-            mediaInputMode: ['binary'],
           },
         },
         description: 'Name of the binary property containing the file',
       },
       {
-        displayName: 'File Path',
-        name: 'filePath',
-        type: 'string',
-        default: '',
-        displayOptions: {
-          show: {
-            resource: ['media'],
-            operation: ['upload'],
-            mediaInputMode: ['filePath'],
-          },
-        },
-        description: 'Absolute path to the media file',
-      },
-      {
-        displayName: 'Prompt',
+        displayName: 'AI Prompt',
         name: 'aiPrompt',
         type: 'string',
         typeOptions: { rows: 3 },
         default: '',
-        displayOptions: { show: { resource: ['post', 'ai'], operation: ['publishAi', 'generate'] } },
+        displayOptions: {
+          show: { resource: ['post', 'ai'], operation: ['publishAi', 'generate'] },
+        },
         description: 'Additional context or instructions for AI content generation',
       },
       {
@@ -487,13 +823,14 @@ export class SendIt implements INodeType {
         description: 'When to publish the post',
       },
       {
-        displayName: 'Schedule ID',
+        displayName: 'Scheduled Post',
         name: 'scheduleId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getScheduledPosts' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['scheduledPost'], operation: ['delete', 'trigger'] } },
-        description: 'The ID of the scheduled post',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
         displayName: 'Platform Filter',
@@ -508,11 +845,11 @@ export class SendIt implements INodeType {
         displayName: 'Platform',
         name: 'analyticsPlatform',
         type: 'options',
-        options: PLATFORM_OPTIONS,
-        default: 'linkedin',
+        typeOptions: { loadOptionsMethod: 'getConnectedPlatforms' },
+        default: '',
         required: true,
         displayOptions: { show: { resource: ['analytics'], operation: ['getAnalytics'] } },
-        description: 'The platform to get analytics for',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
         displayName: 'Additional Options',
@@ -520,7 +857,9 @@ export class SendIt implements INodeType {
         type: 'collection',
         placeholder: 'Add Option',
         default: {},
-        displayOptions: { show: { resource: ['post', 'validation'], operation: ['publish', 'validate'] } },
+        displayOptions: {
+          show: { resource: ['post', 'validation'], operation: ['publish', 'validate'] },
+        },
         options: [
           {
             displayName: 'Media URLs (for carousel)',
@@ -580,7 +919,9 @@ export class SendIt implements INodeType {
         type: 'collection',
         placeholder: 'Add Option',
         default: {},
-        displayOptions: { show: { resource: ['post', 'ai'], operation: ['publishAi', 'generate'] } },
+        displayOptions: {
+          show: { resource: ['post', 'ai'], operation: ['publishAi', 'generate'] },
+        },
         options: [
           {
             displayName: 'Hashtags',
@@ -717,16 +1058,19 @@ export class SendIt implements INodeType {
 
       // ===== Brand voice fields =====
       {
-        displayName: 'Brand Voice ID',
+        displayName: 'Brand Voice',
         name: 'brandVoiceId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getBrandVoices' },
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['brandVoice'], operation: ['get', 'update', 'delete'] } },
-        description: 'The ID of the brand voice profile',
+        displayOptions: {
+          show: { resource: ['brandVoice'], operation: ['get', 'update', 'delete'] },
+        },
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
-        displayName: 'Name',
+        displayName: 'Voice Name',
         name: 'brandVoiceName',
         type: 'string',
         default: '',
@@ -735,7 +1079,7 @@ export class SendIt implements INodeType {
         description: 'Name for the brand voice profile',
       },
       {
-        displayName: 'Description',
+        displayName: 'Voice Description',
         name: 'brandVoiceDescription',
         type: 'string',
         typeOptions: { rows: 3 },
@@ -778,7 +1122,7 @@ export class SendIt implements INodeType {
 
       // ===== Campaign fields =====
       {
-        displayName: 'Objective',
+        displayName: 'Campaign Objective',
         name: 'campaignObjective',
         type: 'string',
         typeOptions: { rows: 3 },
@@ -797,7 +1141,7 @@ export class SendIt implements INodeType {
         description: 'Target platforms for the campaign',
       },
       {
-        displayName: 'Brief',
+        displayName: 'Campaign Brief',
         name: 'campaignBrief',
         type: 'string',
         typeOptions: { rows: 4 },
@@ -831,13 +1175,14 @@ export class SendIt implements INodeType {
         description: 'Optional campaign end date/time (ISO 8601)',
       },
       {
-        displayName: 'Campaign ID',
+        displayName: 'Campaign',
         name: 'campaignId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getCampaigns' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['campaign'], operation: ['schedule'] } },
-        description: 'The ID of the campaign to schedule',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
 
       // ===== Inbox fields =====
@@ -875,9 +1220,10 @@ export class SendIt implements INodeType {
         description: 'Maximum number of threads to return (1-50)',
       },
       {
-        displayName: 'Thread ID',
+        displayName: 'Inbox Thread',
         name: 'inboxThreadId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getInboxThreads' },
         default: '',
         required: true,
         displayOptions: {
@@ -886,10 +1232,10 @@ export class SendIt implements INodeType {
             operation: ['reply', 'getThread', 'updateStatus'],
           },
         },
-        description: 'The ID of the inbox thread',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
-        displayName: 'Message',
+        displayName: 'Reply Message',
         name: 'inboxMessage',
         type: 'string',
         typeOptions: { rows: 3 },
@@ -938,9 +1284,10 @@ export class SendIt implements INodeType {
         description: 'Comma-separated keyword IDs to refresh',
       },
       {
-        displayName: 'Keyword ID',
+        displayName: 'Listening Keyword',
         name: 'listeningKeywordId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getListeningKeywords' },
         default: '',
         required: true,
         displayOptions: {
@@ -949,7 +1296,7 @@ export class SendIt implements INodeType {
             operation: ['getKeyword', 'updateKeyword', 'deleteKeyword'],
           },
         },
-        description: 'Listening keyword ID',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
         displayName: 'Keyword',
@@ -993,7 +1340,9 @@ export class SendIt implements INodeType {
         name: 'listeningNotifyEmail',
         type: 'boolean',
         default: false,
-        displayOptions: { show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] },
+        },
         description: 'Enable email notifications',
       },
       {
@@ -1001,7 +1350,9 @@ export class SendIt implements INodeType {
         name: 'listeningNotifyWebhook',
         type: 'boolean',
         default: false,
-        displayOptions: { show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] },
+        },
         description: 'Enable webhook notifications',
       },
       {
@@ -1009,7 +1360,9 @@ export class SendIt implements INodeType {
         name: 'listeningWebhookUrl',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['createKeyword', 'updateKeyword'] },
+        },
         description: 'Webhook URL for notifications',
       },
       {
@@ -1046,7 +1399,9 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['listening'], operation: ['markMentionsRead', 'archiveMentions'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['markMentionsRead', 'archiveMentions'] },
+        },
         description: 'Comma-separated mention IDs',
       },
       {
@@ -1077,7 +1432,9 @@ export class SendIt implements INodeType {
         name: 'listeningLimit',
         type: 'number',
         default: 50,
-        displayOptions: { show: { resource: ['listening'], operation: ['listMentions', 'listAlerts'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['listMentions', 'listAlerts'] },
+        },
         description: 'Max records to return',
       },
       {
@@ -1145,7 +1502,9 @@ export class SendIt implements INodeType {
         type: 'string',
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['listening'], operation: ['markAlertsRead', 'dismissAlerts'] } },
+        displayOptions: {
+          show: { resource: ['listening'], operation: ['markAlertsRead', 'dismissAlerts'] },
+        },
         description: 'Comma-separated alert IDs',
       },
 
@@ -1166,7 +1525,7 @@ export class SendIt implements INodeType {
         description: 'AI media generation provider',
       },
       {
-        displayName: 'Prompt',
+        displayName: 'Generation Prompt',
         name: 'aiMediaPrompt',
         type: 'string',
         typeOptions: { rows: 3 },
@@ -1250,13 +1609,14 @@ export class SendIt implements INodeType {
 
       // ===== Library fields =====
       {
-        displayName: 'Library Item ID',
+        displayName: 'Library Item',
         name: 'libraryItemId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getLibraryItems' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['library'], operation: ['get', 'update', 'delete'] } },
-        description: 'Library item ID',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
         displayName: 'Title',
@@ -1287,7 +1647,9 @@ export class SendIt implements INodeType {
           { name: 'Evergreen', value: 'evergreen' },
         ],
         default: 'draft',
-        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
+        displayOptions: {
+          show: { resource: ['library'], operation: ['list', 'create', 'update'] },
+        },
         description: 'Library content type',
       },
       {
@@ -1295,7 +1657,9 @@ export class SendIt implements INodeType {
         name: 'libraryCategory',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
+        displayOptions: {
+          show: { resource: ['library'], operation: ['list', 'create', 'update'] },
+        },
         description: 'Library category',
       },
       {
@@ -1303,7 +1667,9 @@ export class SendIt implements INodeType {
         name: 'libraryTags',
         type: 'string',
         default: '',
-        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
+        displayOptions: {
+          show: { resource: ['library'], operation: ['list', 'create', 'update'] },
+        },
         description: 'Comma-separated tags',
       },
       {
@@ -1312,7 +1678,9 @@ export class SendIt implements INodeType {
         type: 'multiOptions',
         options: PLATFORM_OPTIONS,
         default: [],
-        displayOptions: { show: { resource: ['library'], operation: ['list', 'create', 'update'] } },
+        displayOptions: {
+          show: { resource: ['library'], operation: ['list', 'create', 'update'] },
+        },
         description: 'Target platforms for this library item',
       },
       {
@@ -1409,7 +1777,9 @@ export class SendIt implements INodeType {
         typeOptions: { rows: 6 },
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] } },
+        displayOptions: {
+          show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] },
+        },
         description: 'Raw CSV string payload',
       },
       {
@@ -1417,7 +1787,9 @@ export class SendIt implements INodeType {
         name: 'bulkFilename',
         type: 'string',
         default: 'upload.csv',
-        displayOptions: { show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] } },
+        displayOptions: {
+          show: { resource: ['bulkSchedule'], operation: ['validateCsv', 'importCsv'] },
+        },
         description: 'CSV filename for import metadata',
       },
       {
@@ -1437,7 +1809,12 @@ export class SendIt implements INodeType {
         options: PLATFORM_OPTIONS,
         default: 'linkedin',
         required: true,
-        displayOptions: { show: { resource: ['connect'], operation: ['getConnectAction', 'connectToken', 'connectWebhook'] } },
+        displayOptions: {
+          show: {
+            resource: ['connect'],
+            operation: ['getConnectAction', 'connectToken', 'connectWebhook'],
+          },
+        },
         description: 'Platform to connect',
       },
       {
@@ -1471,13 +1848,16 @@ export class SendIt implements INodeType {
 
       // ===== Webhook fields =====
       {
-        displayName: 'Webhook ID',
+        displayName: 'Webhook',
         name: 'webhookId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getWebhooks' },
         default: '',
         required: true,
-        displayOptions: { show: { resource: ['webhooks'], operation: ['get', 'update', 'testWebhook'] } },
-        description: 'Webhook subscription ID',
+        displayOptions: {
+          show: { resource: ['webhooks'], operation: ['get', 'update', 'testWebhook'] },
+        },
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
       {
         displayName: 'Webhook URL',
@@ -1529,13 +1909,14 @@ export class SendIt implements INodeType {
         description: 'Maximum number of dead letter posts to return',
       },
       {
-        displayName: 'Dead Letter ID',
+        displayName: 'Dead Letter Post',
         name: 'deadLetterId',
-        type: 'string',
+        type: 'options',
+        typeOptions: { loadOptionsMethod: 'getDeadLetterPosts' },
         default: '',
         required: true,
         displayOptions: { show: { resource: ['deadLetter'], operation: ['requeue', 'discard'] } },
-        description: 'The ID of the dead letter post',
+        description: 'Choose from the list, or specify an ID using an expression.',
       },
 
       // ===== Audit log fields =====
@@ -1786,6 +2167,142 @@ export class SendIt implements INodeType {
     ],
   };
 
+  methods = {
+    loadOptions: {
+      async getBrandVoices(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/brand-voice',
+          qs: { limit: 100 },
+        });
+        return (
+          ((response as Record<string, unknown>)?.profiles as Array<Record<string, unknown>>) ?? []
+        ).map((p) => ({
+          name: String(p.name || p.id),
+          value: String(p.id),
+        }));
+      },
+      async getCampaigns(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/campaigns',
+          qs: { limit: 100 },
+        });
+        return (
+          ((response as Record<string, unknown>)?.campaigns as Array<Record<string, unknown>>) ?? []
+        ).map((c) => ({
+          name: String(c.name || c.id),
+          value: String(c.id),
+        }));
+      },
+      async getScheduledPosts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/scheduled',
+        });
+        return (
+          ((response as Record<string, unknown>)?.posts as Array<Record<string, unknown>>) ?? []
+        ).map((s) => ({
+          name: String((s.content as Record<string, unknown>)?.text || s.id).substring(0, 60),
+          value: String(s.id),
+        }));
+      },
+      async getWebhooks(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/webhooks',
+        });
+        return (
+          ((response as Record<string, unknown>)?.webhooks as Array<Record<string, unknown>>) ?? []
+        ).map((w) => ({
+          name: `${String(w.url || w.id).substring(0, 50)} (${((w.events as string[]) ?? []).join(', ')})`,
+          value: String(w.id),
+        }));
+      },
+      async getLibraryItems(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/library',
+          qs: { limit: 100 },
+        });
+        return (
+          ((response as Record<string, unknown>)?.items as Array<Record<string, unknown>>) ?? []
+        ).map((item) => ({
+          name: String(item.title || item.id),
+          value: String(item.id),
+        }));
+      },
+      async getListeningKeywords(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/listening/keywords',
+        });
+        return (
+          ((response as Record<string, unknown>)?.keywords as Array<Record<string, unknown>>) ?? []
+        ).map((k) => ({
+          name: `${String(k.keyword)} (${String(k.type || 'custom')})`,
+          value: String(k.id),
+        }));
+      },
+      async getConnectedPlatforms(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/accounts',
+          qs: { limit: 100 },
+        });
+        const seen = new Set<string>();
+        return (
+          ((response as Record<string, unknown>)?.accounts as Array<Record<string, unknown>>) ?? []
+        )
+          .filter((a) => {
+            const p = String(a.platform);
+            if (seen.has(p)) return false;
+            seen.add(p);
+            return true;
+          })
+          .map((a) => ({
+            name: String(a.platform).charAt(0).toUpperCase() + String(a.platform).slice(1),
+            value: String(a.platform),
+          }));
+      },
+      async getDeadLetterPosts(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/dead-letter',
+          qs: { limit: 50 },
+        });
+        return (
+          ((response as Record<string, unknown>)?.posts as Array<Record<string, unknown>>) ?? []
+        ).map((dl) => ({
+          name: `${String(dl.id)} — ${((dl.platforms as string[]) ?? []).join(', ')}`,
+          value: String(dl.id),
+        }));
+      },
+      async getInboxThreads(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'GET' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/inbox',
+          qs: { limit: 50 },
+        });
+        return (
+          ((response as Record<string, unknown>)?.threads as Array<Record<string, unknown>>) ?? []
+        ).map((t) => ({
+          name: `${String(t.platform || 'unknown')} — ${String(t.id)}`,
+          value: String(t.id),
+        }));
+      },
+    },
+  };
+
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
     const items = this.getInputData();
     const returnData: INodeExecutionData[] = [];
@@ -1795,7 +2312,9 @@ export class SendIt implements INodeType {
     for (let i = 0; i < items.length; i++) {
       try {
         const teamId = getOptionalString(this.getNodeParameter('teamId', i) as string);
-        const idempotencyKey = getOptionalString(this.getNodeParameter('idempotencyKey', i) as string);
+        const idempotencyKey = getOptionalString(
+          this.getNodeParameter('idempotencyKey', i) as string
+        );
         const optionalHeaders = buildOptionalHeaders(teamId, idempotencyKey);
 
         const handler = RESOURCE_HANDLERS[resource];

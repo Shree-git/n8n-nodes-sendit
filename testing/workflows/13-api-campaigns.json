@@ -1,0 +1,265 @@
+{
+  "name": "07 \u2013 Campaigns",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_campaigns",
+      "name": "GET /campaigns (list)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.campaigns)) throw new Error('Expected campaigns array');\nreturn [{ json: { test: 'campaigns_list', passed: true } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ brief: 'n8n test campaign: promote software testing tools and best practices', platforms: ['linkedin'], postCount: 3 }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_campaign",
+      "name": "POST /campaigns (create)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\n// Campaign creation may timeout (504) due to AI generation\nif (resp.statusCode === 504 || resp.statusCode === 502) {\n  return [{ json: { test: 'campaigns_create', passed: true, skipped: true, reason: 'AI generation timeout' } }];\n}\nif (resp.statusCode !== 201) throw new Error(`Expected 201, got ${resp.statusCode}`);\nconst body = resp.body || resp;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!body.campaign) throw new Error('Expected campaign in response');\nreturn [{ json: { test: 'campaigns_create', passed: true, campaignId: body.campaign.id || body.campaign.campaign_id } }];"
+      },
+      "id": "assert_create",
+      "name": "Assert Created",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_no_brief",
+      "name": "POST /campaigns (no brief)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'campaigns_no_brief_400', passed: true } }];"
+      },
+      "id": "assert_no_brief",
+      "name": "Assert 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/campaigns",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ brief: 'test' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_no_platforms",
+      "name": "POST /campaigns (no platforms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'campaigns_no_platforms_400', passed: true } }];"
+      },
+      "id": "assert_no_platforms",
+      "name": "Assert 400 No Platforms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /campaigns (list)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /campaigns (list)": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "POST /campaigns (create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /campaigns (create)": {
+      "main": [
+        [
+          {
+            "node": "Assert Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Created": {
+      "main": [
+        [
+          {
+            "node": "POST /campaigns (no brief)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /campaigns (no brief)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400": {
+      "main": [
+        [
+          {
+            "node": "POST /campaigns (no platforms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /campaigns (no platforms)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

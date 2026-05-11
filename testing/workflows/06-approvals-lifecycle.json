@@ -11,20 +11,20 @@
     },
     {
       "parameters": {
-        "resource": "approvals",
-        "operation": "list"
+        "url": "https://sendit.infiniteappsai.com/api/v1/approvals",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "approvals_list",
-      "name": "SendIt - Approvals List",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [260, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /approvals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
     },
     {
       "parameters": {
@@ -40,10 +40,7 @@
       "parameters": {
         "conditions": {
           "boolean": [
-            {
-              "value1": "={{ $json.canMutate && !!$json.approvalPostId }}",
-              "value2": true
-            }
+            { "value1": "={{ $json.canMutate && !!$json.approvalPostId }}", "value2": true }
           ]
         }
       },
@@ -55,41 +52,47 @@
     },
     {
       "parameters": {
-        "resource": "approvals",
-        "operation": "approve",
-        "approvalPostId": "={{ $json.approvalPostId }}",
-        "approvalComment": "Automated approval check"
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/approvals/{{ $json.approvalPostId }}/approve",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"comment\":\"Automated approval check\"}",
+        "options": {}
       },
       "id": "approvals_approve",
-      "name": "SendIt - Approvals Approve",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [1040, -120],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "POST /approvals/:id/approve",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, -120]
     },
     {
       "parameters": {
-        "resource": "approvals",
-        "operation": "reject",
-        "approvalPostId": "={{ $json.approvalPostId }}",
-        "approvalReason": "Automated rejection check"
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/approvals/{{ $node['Normalize Approvals'].json.approvalPostId }}/reject",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\"reason\":\"Automated rejection check\"}",
+        "options": {}
       },
       "id": "approvals_reject",
-      "name": "SendIt - Approvals Reject",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [1040, 120],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "POST /approvals/:id/reject",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 120]
     },
     {
       "parameters": {
@@ -103,29 +106,20 @@
     }
   ],
   "connections": {
-    "Start": {
-      "main": [[{ "node": "SendIt - Approvals List", "type": "main", "index": 0 }]]
-    },
-    "SendIt - Approvals List": {
-      "main": [[{ "node": "Normalize Approvals", "type": "main", "index": 0 }]]
-    },
+    "Start": { "main": [[{ "node": "GET /approvals", "type": "main", "index": 0 }]] },
+    "GET /approvals": { "main": [[{ "node": "Normalize Approvals", "type": "main", "index": 0 }]] },
     "Normalize Approvals": {
       "main": [[{ "node": "IF Run Approve/Reject?", "type": "main", "index": 0 }]]
     },
     "IF Run Approve/Reject?": {
       "main": [
-        [{ "node": "SendIt - Approvals Approve", "type": "main", "index": 0 }],
+        [{ "node": "POST /approvals/:id/approve", "type": "main", "index": 0 }],
         [{ "node": "Safe Complete", "type": "main", "index": 0 }]
       ]
     },
-    "SendIt - Approvals Approve": {
-      "main": [[{ "node": "SendIt - Approvals Reject", "type": "main", "index": 0 }]]
+    "POST /approvals/:id/approve": {
+      "main": [[{ "node": "POST /approvals/:id/reject", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

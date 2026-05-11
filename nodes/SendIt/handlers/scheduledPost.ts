@@ -1,7 +1,12 @@
 import { IHttpRequestMethods, NodeOperationError } from 'n8n-workflow';
 import { sendRequest, type ResourceHandler } from '../helpers';
 
-export const handleScheduledPost: ResourceHandler = async (context, operation, i, optionalHeaders) => {
+export const handleScheduledPost: ResourceHandler = async (
+  context,
+  operation,
+  i,
+  optionalHeaders
+) => {
   if (operation === 'create') {
     const platforms = context.getNodeParameter('platforms', i) as string[];
     const text = context.getNodeParameter('text', i) as string;
@@ -23,7 +28,7 @@ export const handleScheduledPost: ResourceHandler = async (context, operation, i
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -41,7 +46,7 @@ export const handleScheduledPost: ResourceHandler = async (context, operation, i
         url: '/scheduled',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -54,7 +59,7 @@ export const handleScheduledPost: ResourceHandler = async (context, operation, i
         method: 'DELETE' as IHttpRequestMethods,
         url: `/scheduled/${scheduleId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -67,7 +72,7 @@ export const handleScheduledPost: ResourceHandler = async (context, operation, i
         method: 'POST' as IHttpRequestMethods,
         url: `/scheduled/${scheduleId}/trigger`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

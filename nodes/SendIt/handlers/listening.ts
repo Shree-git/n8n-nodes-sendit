@@ -17,7 +17,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -38,7 +38,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         url: '/listening/keywords',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -67,7 +67,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -79,7 +79,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         method: 'GET' as IHttpRequestMethods,
         url: `/listening/keywords/${keywordId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -107,7 +107,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -119,7 +119,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         method: 'DELETE' as IHttpRequestMethods,
         url: `/listening/keywords/${keywordId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -148,7 +148,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         url: '/listening/mentions',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -160,7 +160,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         method: 'GET' as IHttpRequestMethods,
         url: `/listening/mentions/${mentionId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -174,7 +174,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         body: { ids: maybeArray(mentionIds) ?? [] },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -188,7 +188,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         body: { ids: maybeArray(mentionIds) ?? [] },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -211,7 +211,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         url: '/listening/alerts',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -225,7 +225,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         body: { ids: maybeArray(alertIds) ?? [] },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -239,7 +239,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         body: { ids: maybeArray(alertIds) ?? [] },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -250,7 +250,7 @@ export const handleListening: ResourceHandler = async (context, operation, i, op
         method: 'GET' as IHttpRequestMethods,
         url: '/listening/summary',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

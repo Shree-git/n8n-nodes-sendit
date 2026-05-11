@@ -1,0 +1,378 @@
+{
+  "name": "05 \u2013 Analytics",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/analytics?platform=linkedin",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "get_analytics",
+      "name": "GET /analytics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nif (resp.statusCode !== 200) throw new Error(`Expected 200, got ${resp.statusCode}`);\nconst body = resp.body || resp;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'analytics_get', passed: true } }];"
+      },
+      "id": "assert_analytics",
+      "name": "Assert Analytics OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/analytics",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "analytics_no_platform",
+      "name": "GET /analytics (no platform)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nconst body = resp.body || resp;\nif (body.success !== false) throw new Error('Expected success: false');\nreturn [{ json: { test: 'analytics_missing_platform_400', passed: true } }];"
+      },
+      "id": "assert_no_platform",
+      "name": "Assert 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/best-times?platform=linkedin",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "best_times",
+      "name": "GET /best-times",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'best_times', passed: true } }];"
+      },
+      "id": "assert_best_times",
+      "name": "Assert Best Times OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/best-times",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "best_times_no_platform",
+      "name": "GET /best-times (no platform)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'best_times_no_platform_400', passed: true } }];"
+      },
+      "id": "assert_best_times_no_platform",
+      "name": "Assert Best Times 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/content-score",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'], text: 'Check out our latest blog post about AI and machine learning trends! #AI #ML #tech' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "content_score",
+      "name": "POST /content-score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'content_score', passed: true } }];"
+      },
+      "id": "assert_score",
+      "name": "Assert Score OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/content-score",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: 'missing platforms field' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "score_no_platforms",
+      "name": "POST /content-score (no platforms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'content_score_no_platforms_400', passed: true } }];"
+      },
+      "id": "assert_score_no_platforms",
+      "name": "Assert Score 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /analytics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /analytics": {
+      "main": [
+        [
+          {
+            "node": "Assert Analytics OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Analytics OK": {
+      "main": [
+        [
+          {
+            "node": "GET /analytics (no platform)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /analytics (no platform)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400": {
+      "main": [
+        [
+          {
+            "node": "GET /best-times",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /best-times": {
+      "main": [
+        [
+          {
+            "node": "Assert Best Times OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Best Times OK": {
+      "main": [
+        [
+          {
+            "node": "GET /best-times (no platform)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /best-times (no platform)": {
+      "main": [
+        [
+          {
+            "node": "Assert Best Times 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Best Times 400": {
+      "main": [
+        [
+          {
+            "node": "POST /content-score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /content-score": {
+      "main": [
+        [
+          {
+            "node": "Assert Score OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Score OK": {
+      "main": [
+        [
+          {
+            "node": "POST /content-score (no platforms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /content-score (no platforms)": {
+      "main": [
+        [
+          {
+            "node": "Assert Score 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

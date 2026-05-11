@@ -2,20 +2,22 @@
   "name": "SendIt Test 03 - Trigger Event Handling Branch",
   "nodes": [
     {
-      "parameters": {
-        "event": "post.failed"
-      },
-      "id": "sendit_trigger",
-      "name": "SendIt Trigger - Post Failed",
-      "type": "n8n-nodes-sendit.sendItTrigger",
+      "parameters": {},
+      "id": "manual_trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
       "typeVersion": 1,
-      "position": [0, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulate a post.failed trigger payload\nreturn [{\n  json: {\n    event: 'post.failed',\n    platform: 'x',\n    postId: 'post_simulated_1',\n    error: 'Rate limit exceeded',\n    timestamp: new Date().toISOString(),\n  },\n}];"
+      },
+      "id": "simulate_trigger",
+      "name": "Simulate Trigger Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 0]
     },
     {
       "parameters": {
@@ -25,7 +27,7 @@
       "name": "Normalize Trigger Payload",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [260, 0]
+      "position": [520, 0]
     },
     {
       "parameters": {
@@ -43,75 +45,43 @@
       "name": "Is X Platform?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 1,
-      "position": [520, 0]
+      "position": [780, 0]
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'x_quota_sensitive',\n    severity: 'high',\n    action: 'route_to_quota_aware_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n  },\n}];"
+        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'x_quota_sensitive',\n    severity: 'high',\n    action: 'route_to_quota_aware_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n    passed: true,\n  },\n}];"
       },
       "id": "handle_x_branch",
       "name": "Handle X Branch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [780, -120]
+      "position": [1040, -120]
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'standard_platform',\n    severity: 'medium',\n    action: 'route_to_standard_failure_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n  },\n}];"
+        "jsCode": "return [{\n  json: {\n    scenario: 'trigger_event_branch',\n    branch: 'standard_platform',\n    severity: 'medium',\n    action: 'route_to_standard_failure_alerting',\n    eventType: $json.eventType,\n    platform: $json.platform,\n    postId: $json.postId,\n    passed: true,\n  },\n}];"
       },
       "id": "handle_standard_branch",
       "name": "Handle Standard Branch",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [780, 120]
+      "position": [1040, 120]
     }
   ],
   "connections": {
-    "SendIt Trigger - Post Failed": {
-      "main": [
-        [
-          {
-            "node": "Normalize Trigger Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Start": { "main": [[{ "node": "Simulate Trigger Payload", "type": "main", "index": 0 }]] },
+    "Simulate Trigger Payload": {
+      "main": [[{ "node": "Normalize Trigger Payload", "type": "main", "index": 0 }]]
     },
     "Normalize Trigger Payload": {
-      "main": [
-        [
-          {
-            "node": "Is X Platform?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Is X Platform?", "type": "main", "index": 0 }]]
     },
     "Is X Platform?": {
       "main": [
-        [
-          {
-            "node": "Handle X Branch",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Handle Standard Branch",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Handle X Branch", "type": "main", "index": 0 }],
+        [{ "node": "Handle Standard Branch", "type": "main", "index": 0 }]
       ]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

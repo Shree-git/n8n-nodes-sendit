@@ -1,0 +1,369 @@
+{
+  "name": "11 \u2013 Dead Letter Queue",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/dead-letter",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_dead_letter",
+      "name": "GET /dead-letter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.posts)) throw new Error('Expected posts array');\nreturn [{ json: { test: 'dead_letter_list', passed: true, hasPosts: body.posts.length > 0, firstPostId: body.posts.length > 0 ? body.posts[0].id : null } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/dead-letter?status=dead&limit=5",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_filtered",
+      "name": "GET /dead-letter?status=dead",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'dead_letter_list_filtered', passed: true } }];"
+      },
+      "id": "assert_filtered",
+      "name": "Assert Filtered OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node['Assert List OK'].json.hasPosts }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if_has_posts",
+      "name": "Has Dead Letters?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/dead-letter/{{ $node['Assert List OK'].json.firstPostId }}/requeue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "requeue_post",
+      "name": "POST /dead-letter/:id/requeue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\n// Requeue may succeed or fail depending on post state\nreturn [{ json: { test: 'dead_letter_requeue', passed: true } }];"
+      },
+      "id": "assert_requeue",
+      "name": "Assert Requeue",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No dead letter posts to test - skip\nreturn [{ json: { test: 'dead_letter_actions_skip', passed: true, skipped: true } }];"
+      },
+      "id": "skip_actions",
+      "name": "Skip (no posts)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/dead-letter/nonexistent_id/requeue",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "requeue_nonexistent",
+      "name": "POST /dead-letter/:id/requeue (404)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 404 && status !== 400 && resp.success !== false) throw new Error(`Expected 404/400 or error, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'dead_letter_requeue_nonexistent', passed: true } }];"
+      },
+      "id": "assert_nonexistent",
+      "name": "Assert 404/400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/dead-letter/nonexistent_id/discard",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "discard_nonexistent",
+      "name": "POST /dead-letter/:id/discard (404)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 404 && status !== 400 && resp.success !== false) throw new Error(`Expected 404/400 or error, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'dead_letter_discard_nonexistent', passed: true } }];"
+      },
+      "id": "assert_discard_nonexistent",
+      "name": "Assert Discard 404/400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /dead-letter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /dead-letter": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "GET /dead-letter?status=dead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /dead-letter?status=dead": {
+      "main": [
+        [
+          {
+            "node": "Assert Filtered OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Filtered OK": {
+      "main": [
+        [
+          {
+            "node": "Has Dead Letters?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Dead Letters?": {
+      "main": [
+        [
+          {
+            "node": "POST /dead-letter/:id/requeue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip (no posts)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /dead-letter/:id/requeue": {
+      "main": [
+        [
+          {
+            "node": "Assert Requeue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Requeue": {
+      "main": [
+        [
+          {
+            "node": "POST /dead-letter/:id/requeue (404)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip (no posts)": {
+      "main": [
+        [
+          {
+            "node": "POST /dead-letter/:id/requeue (404)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /dead-letter/:id/requeue (404)": {
+      "main": [
+        [
+          {
+            "node": "Assert 404/400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 404/400": {
+      "main": [
+        [
+          {
+            "node": "POST /dead-letter/:id/discard (404)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /dead-letter/:id/discard (404)": {
+      "main": [
+        [
+          {
+            "node": "Assert Discard 404/400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

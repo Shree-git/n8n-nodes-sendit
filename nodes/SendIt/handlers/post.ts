@@ -33,7 +33,7 @@ export const handlePost: ResourceHandler = async (context, operation, i, optiona
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -59,7 +59,7 @@ export const handlePost: ResourceHandler = async (context, operation, i, optiona
         body: buildAiBody(platforms, mediaUrl, prompt, aiOptions),
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

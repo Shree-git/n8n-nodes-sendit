@@ -4,10 +4,13 @@ This is an n8n community node for [SendIt](https://sendit.infiniteappsai.com), a
 
 [n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-## Release Notes (v1.2.0)
+## Release Notes (v1.3.1)
 
-`1.2.0` is a major maintainability and feature parity release:
+`1.3.1` is a verification-readiness release:
 
+- **n8n verification readiness**: Added GitHub Actions provenance publishing support for npm releases
+- **Cloud-safe media upload**: Removed host file path reads; media uploads now use n8n binary data only
+- **Standalone package fix**: Removed package imports from the SendIt server codebase
 - **Refactored architecture**: Monolithic 2,842-line node split into handler-per-resource dispatch map (23 handler modules)
 - **New resources**: Dead Letter Queue, Audit Log, Conversions
 - **Expanded resources**: Brand Voice (get/update/delete), Webhooks (list/get/update), AI (reply suggestions, mention summary, feedback)
@@ -23,7 +26,33 @@ Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes
 npm install n8n-nodes-sendit
 ```
 
-## Node Coverage (v1.2.0)
+## Quick Start
+
+### 1. Get your API key
+
+Sign in to [SendIt](https://sendit.infiniteappsai.com), go to **Dashboard > API Keys > Create New Key**, and copy the key (format: `sk_live_...`).
+
+### 2. Add credentials in n8n
+
+Go to **Credentials > Add Credential**, search for **SendIt API**, paste your key, and save. n8n tests the connection automatically.
+
+### 3. Publish your first post
+
+Add a **SendIt** node to a workflow, select **Post > Publish**, pick your target platforms, enter text, and execute. That's it.
+
+### 4. Set up a trigger
+
+Add a **SendIt Trigger** node as the first node in a new workflow. Select events to listen for (e.g., Post Published, Post Failed). Activate the workflow and n8n registers a webhook with SendIt automatically.
+
+### 5. Example: AI social publishing pipeline
+
+```
+[Google Sheets] → [SendIt: AI > Generate Content] → [SendIt: Post > Publish] → [SendIt Trigger: post.published]
+```
+
+Read content ideas from a spreadsheet, generate AI copy, publish to multiple platforms, and get notified on success.
+
+## Node Coverage (v1.3.1)
 
 ### Trigger
 
@@ -40,31 +69,31 @@ npm install n8n-nodes-sendit
 
 ### Actions
 
-| Resource | Operation(s) |
-|----------|---------------|
-| `post` | `publish`, `publishAi` |
-| `ai` | `generate`, `replySuggestions`, `mentionSummary`, `feedback` |
-| `media` | `upload` |
-| `scheduledPost` | `create`, `getAll`, `delete`, `trigger` |
-| `account` | `getAll` |
-| `validation` | `validate` |
-| `analytics` | `getAnalytics` |
-| `brandVoice` | `create`, `list`, `get`, `update`, `delete` |
-| `campaign` | `plan`, `list`, `schedule` |
-| `inbox` | `list`, `reply`, `getThread`, `updateStatus` |
-| `listening` | `refresh`, `listKeywords`, `createKeyword`, `getKeyword`, `updateKeyword`, `deleteKeyword`, `listMentions`, `getMention`, `markMentionsRead`, `archiveMentions`, `listAlerts`, `markAlertsRead`, `dismissAlerts`, `getSummary` |
-| `aiMedia` | `create`, `getStatus` |
-| `meta` | `getCapabilities`, `getRequirements`, `getPlatformSettingsSchema`, `getBestTimes`, `getWebhookEventsCatalog`, `getWebhookTriggers` |
-| `contentScore` | `score` |
-| `library` | `list`, `create`, `get`, `update`, `delete`, `listCategories`, `listTags` |
-| `approvals` | `list`, `approve`, `reject` |
-| `bulkSchedule` | `listImports`, `getImport`, `validateCsv`, `importCsv`, `downloadTemplate` |
-| `connect` | `getConnectAction`, `connectToken`, `connectWebhook` |
-| `webhooks` | `list`, `get`, `update`, `testWebhook` |
-| `deadLetter` | `list`, `requeue`, `discard` |
-| `auditLog` | `list` |
-| `conversions` | `track` |
-| `advanced` | `apiRequest` |
+| Resource        | Operation(s)                                                                                                                                                                                                                   |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `post`          | `publish`, `publishAi`                                                                                                                                                                                                         |
+| `ai`            | `generate`, `replySuggestions`, `mentionSummary`, `feedback`                                                                                                                                                                   |
+| `media`         | `upload`                                                                                                                                                                                                                       |
+| `scheduledPost` | `create`, `getAll`, `delete`, `trigger`                                                                                                                                                                                        |
+| `account`       | `getAll`                                                                                                                                                                                                                       |
+| `validation`    | `validate`                                                                                                                                                                                                                     |
+| `analytics`     | `getAnalytics`                                                                                                                                                                                                                 |
+| `brandVoice`    | `create`, `list`, `get`, `update`, `delete`                                                                                                                                                                                    |
+| `campaign`      | `plan`, `list`, `schedule`                                                                                                                                                                                                     |
+| `inbox`         | `list`, `reply`, `getThread`, `updateStatus`                                                                                                                                                                                   |
+| `listening`     | `refresh`, `listKeywords`, `createKeyword`, `getKeyword`, `updateKeyword`, `deleteKeyword`, `listMentions`, `getMention`, `markMentionsRead`, `archiveMentions`, `listAlerts`, `markAlertsRead`, `dismissAlerts`, `getSummary` |
+| `aiMedia`       | `create`, `getStatus`                                                                                                                                                                                                          |
+| `meta`          | `getCapabilities`, `getRequirements`, `getPlatformSettingsSchema`, `getBestTimes`, `getWebhookEventsCatalog`, `getWebhookTriggers`                                                                                             |
+| `contentScore`  | `score`                                                                                                                                                                                                                        |
+| `library`       | `list`, `create`, `get`, `update`, `delete`, `listCategories`, `listTags`                                                                                                                                                      |
+| `approvals`     | `list`, `approve`, `reject`                                                                                                                                                                                                    |
+| `bulkSchedule`  | `listImports`, `getImport`, `validateCsv`, `importCsv`, `downloadTemplate`                                                                                                                                                     |
+| `connect`       | `getConnectAction`, `connectToken`, `connectWebhook`                                                                                                                                                                           |
+| `webhooks`      | `list`, `get`, `update`, `testWebhook`                                                                                                                                                                                         |
+| `deadLetter`    | `list`, `requeue`, `discard`                                                                                                                                                                                                   |
+| `auditLog`      | `list`                                                                                                                                                                                                                         |
+| `conversions`   | `track`                                                                                                                                                                                                                        |
+| `advanced`      | `apiRequest`                                                                                                                                                                                                                   |
 
 ### Global Optional Headers
 
@@ -84,7 +113,7 @@ The node ships with the full SendIt platform catalog option list and should be t
 `Credentials JSON` example:
 
 ```json
-{"apiKey":"your-platform-key","apiSecret":"your-platform-secret"}
+{ "apiKey": "your-platform-key", "apiSecret": "your-platform-secret" }
 ```
 
 ### Create library item (`library.create`)

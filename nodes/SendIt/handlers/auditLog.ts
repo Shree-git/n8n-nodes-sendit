@@ -23,7 +23,7 @@ export const handleAuditLog: ResourceHandler = async (context, operation, i, opt
         url: '/audit-log',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

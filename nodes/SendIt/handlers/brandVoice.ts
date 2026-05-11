@@ -25,7 +25,7 @@ export const handleBrandVoice: ResourceHandler = async (context, operation, i, o
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -40,7 +40,7 @@ export const handleBrandVoice: ResourceHandler = async (context, operation, i, o
         url: '/brand-voice',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -52,7 +52,7 @@ export const handleBrandVoice: ResourceHandler = async (context, operation, i, o
         method: 'GET' as IHttpRequestMethods,
         url: `/brand-voice/${id}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -80,7 +80,7 @@ export const handleBrandVoice: ResourceHandler = async (context, operation, i, o
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -92,7 +92,7 @@ export const handleBrandVoice: ResourceHandler = async (context, operation, i, o
         method: 'DELETE' as IHttpRequestMethods,
         url: `/brand-voice/${id}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

@@ -4,10 +4,7 @@
       "id": "sheets-content-calendar",
       "name": "Google Sheets Content Calendar",
       "description": "Publish social media posts from a Google Sheets content calendar",
-      "nodes": [
-        "Google Sheets Trigger",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["Google Sheets Trigger", "SendIt (Publish Post)"],
       "category": "content-management",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -16,10 +13,7 @@
       "id": "rss-auto-share",
       "name": "RSS Feed to Social Media",
       "description": "Automatically share new RSS feed items to your social channels",
-      "nodes": [
-        "RSS Feed Trigger",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["RSS Feed Trigger", "SendIt (Publish Post)"],
       "category": "content-distribution",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -28,35 +22,16 @@
       "id": "notion-content-pipeline",
       "name": "Notion Content Pipeline",
       "description": "Publish posts when Notion pages are marked as 'Ready'",
-      "nodes": [
-        "Notion Trigger",
-        "IF (Check Status)",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["Notion Trigger", "IF (Check Status)", "SendIt (Publish Post)"],
       "category": "content-management",
       "difficulty": "intermediate",
       "estimated_setup": "10 minutes"
     },
     {
-      "id": "wordpress-auto-share",
-      "name": "WordPress Auto-Share",
-      "description": "Share new WordPress posts to all social platforms",
-      "nodes": [
-        "WordPress Trigger",
-        "SendIt (Publish Post)"
-      ],
-      "category": "content-distribution",
-      "difficulty": "beginner",
-      "estimated_setup": "5 minutes"
-    },
-    {
       "id": "shopify-product-announcements",
       "name": "Shopify Product Announcements",
       "description": "Announce new Shopify products on social media",
-      "nodes": [
-        "Shopify Trigger",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["Shopify Trigger", "SendIt (Publish Post)"],
       "category": "ecommerce",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -65,10 +40,7 @@
       "id": "airtable-scheduler",
       "name": "Airtable Post Scheduler",
       "description": "Schedule posts from Airtable records with scheduled times",
-      "nodes": [
-        "Airtable Trigger",
-        "SendIt (Schedule Post)"
-      ],
+      "nodes": ["Airtable Trigger", "SendIt (Schedule Post)"],
       "category": "scheduling",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -77,10 +49,7 @@
       "id": "slack-to-social",
       "name": "Slack to Social Media",
       "description": "Turn Slack channel messages into social posts",
-      "nodes": [
-        "Slack Trigger",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["Slack Trigger", "SendIt (Publish Post)"],
       "category": "team-collaboration",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -89,11 +58,7 @@
       "id": "publish-to-slack",
       "name": "Publish Notifications to Slack",
       "description": "Get Slack notifications when posts are published",
-      "nodes": [
-        "Webhook (SendIt Events)",
-        "IF (Check Event Type)",
-        "Slack (Send Message)"
-      ],
+      "nodes": ["Webhook (SendIt Events)", "IF (Check Event Type)", "Slack (Send Message)"],
       "category": "monitoring",
       "difficulty": "intermediate",
       "estimated_setup": "10 minutes"
@@ -102,11 +67,7 @@
       "id": "failure-email-alerts",
       "name": "Email Alerts on Failures",
       "description": "Receive email alerts when posts fail to publish",
-      "nodes": [
-        "Webhook (SendIt Events)",
-        "IF (Check for Failed)",
-        "Send Email"
-      ],
+      "nodes": ["Webhook (SendIt Events)", "IF (Check for Failed)", "Send Email"],
       "category": "monitoring",
       "difficulty": "intermediate",
       "estimated_setup": "10 minutes"
@@ -115,10 +76,7 @@
       "id": "youtube-promotion",
       "name": "YouTube Video Promotion",
       "description": "Share new YouTube videos to social media",
-      "nodes": [
-        "RSS Feed Trigger (YouTube Channel)",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["RSS Feed Trigger (YouTube Channel)", "SendIt (Publish Post)"],
       "category": "content-distribution",
       "difficulty": "beginner",
       "estimated_setup": "5 minutes"
@@ -127,11 +85,7 @@
       "id": "multi-platform-router",
       "name": "Multi-Platform Content Router",
       "description": "Route content to different platforms based on content type",
-      "nodes": [
-        "Webhook (Incoming)",
-        "Switch (Content Type)",
-        "SendIt (Publish Post) x3"
-      ],
+      "nodes": ["Webhook (Incoming)", "Switch (Content Type)", "SendIt (Publish Post) x3"],
       "category": "advanced",
       "difficulty": "advanced",
       "estimated_setup": "15 minutes"
@@ -155,10 +109,7 @@
       "id": "log-to-database",
       "name": "Log Posts to Database",
       "description": "Log all published posts to a database for analytics",
-      "nodes": [
-        "Webhook (SendIt Events)",
-        "Postgres/MySQL (Insert Row)"
-      ],
+      "nodes": ["Webhook (SendIt Events)", "Postgres/MySQL (Insert Row)"],
       "category": "analytics",
       "difficulty": "intermediate",
       "estimated_setup": "10 minutes"
@@ -167,11 +118,7 @@
       "id": "typeform-testimonials",
       "name": "Share Typeform Testimonials",
       "description": "Share positive testimonials from Typeform on social media",
-      "nodes": [
-        "Typeform Trigger",
-        "IF (Rating >= 4)",
-        "SendIt (Publish Post)"
-      ],
+      "nodes": ["Typeform Trigger", "IF (Rating >= 4)", "SendIt (Publish Post)"],
       "category": "user-generated-content",
       "difficulty": "intermediate",
       "estimated_setup": "10 minutes"

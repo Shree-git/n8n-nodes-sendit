@@ -1,6 +1,12 @@
 import { IHttpRequestMethods, NodeOperationError } from 'n8n-workflow';
 import { SENDIT_API_ORIGIN } from '../constants';
-import { sendRequest, getOptionalString, parseJsonInput, assertObject, type ResourceHandler } from '../helpers';
+import {
+  sendRequest,
+  getOptionalString,
+  parseJsonInput,
+  assertObject,
+  type ResourceHandler,
+} from '../helpers';
 
 export const handleAdvanced: ResourceHandler = async (context, operation, i, optionalHeaders) => {
   if (operation === 'apiRequest') {
@@ -19,13 +25,15 @@ export const handleAdvanced: ResourceHandler = async (context, operation, i, opt
     if (!/^\/api\/v[12]\//.test(normalizedPath)) {
       throw new NodeOperationError(
         context.getNode(),
-        'Advanced path must start with /api/v1/ or /api/v2/',
+        'Advanced path must start with /api/v1/ or /api/v2/'
       );
     }
 
     const parsedQuery = parseJsonInput(context, queryJson, 'Query JSON');
     const parsedBody = parseJsonInput(context, bodyJson, 'Body JSON');
-    const qs = parsedQuery ? assertObject(parsedQuery, 'Query JSON must parse to an object') : undefined;
+    const qs = parsedQuery
+      ? assertObject(parsedQuery, 'Query JSON must parse to an object')
+      : undefined;
     const body = parsedBody === undefined ? undefined : parsedBody;
 
     return sendRequest(
@@ -40,7 +48,7 @@ export const handleAdvanced: ResourceHandler = async (context, operation, i, opt
         timeout: requestTimeoutMs > 0 ? requestTimeoutMs : undefined,
       },
       optionalHeaders,
-      SENDIT_API_ORIGIN,
+      SENDIT_API_ORIGIN
     );
   }
 

@@ -20,10 +20,7 @@
       "position": [220, 0]
     },
     {
-      "parameters": {
-        "batchSize": 1,
-        "options": {}
-      },
+      "parameters": { "batchSize": 1, "options": {} },
       "id": "split_batches",
       "name": "Split In Batches",
       "type": "n8n-nodes-base.splitInBatches",
@@ -33,12 +30,7 @@
     {
       "parameters": {
         "conditions": {
-          "boolean": [
-            {
-              "value1": "={{ $json.alreadyProcessed === true }}",
-              "value2": true
-            }
-          ]
+          "boolean": [{ "value1": "={{ $json.alreadyProcessed === true }}", "value2": true }]
         }
       },
       "id": "if_idempotency_gate",
@@ -59,33 +51,32 @@
     },
     {
       "parameters": {
-        "resource": "post",
-        "operation": "publish",
-        "platforms": "={{ $json.platforms }}",
-        "text": "={{ $json.text }}",
-        "mediaUrl": ""
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: $json.platforms, content: { text: $json.text } }) }}",
+        "options": {}
       },
       "id": "sendit_publish_primary",
-      "name": "SendIt - Publish Primary",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
+      "name": "POST /publish (primary)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [920, 100],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "conditions": {
           "boolean": [
-            {
-              "value1": "={{ !!$json.error || $json.success === false }}",
-              "value2": true
-            }
+            { "value1": "={{ !!$json.error || $json.success === false }}", "value2": true }
           ]
         }
       },
@@ -96,10 +87,7 @@
       "position": [1160, 100]
     },
     {
-      "parameters": {
-        "amount": 3,
-        "unit": "seconds"
-      },
+      "parameters": { "amount": 3, "unit": "seconds" },
       "id": "wait_before_retry",
       "name": "Wait Before Retry",
       "type": "n8n-nodes-base.wait",
@@ -118,24 +106,26 @@
     },
     {
       "parameters": {
-        "resource": "post",
-        "operation": "publish",
-        "platforms": "={{ $json.platforms }}",
-        "text": "={{ $json.text }}",
-        "mediaUrl": ""
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: $json.platforms, content: { text: $json.text } }) }}",
+        "options": {}
       },
       "id": "sendit_publish_retry",
-      "name": "SendIt - Publish Retry",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
+      "name": "POST /publish (retry)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1880, -20],
-      "onError": "continueRegularOutput",
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -158,9 +148,7 @@
       "position": [1400, 220]
     },
     {
-      "parameters": {
-        "jsCode": "return [{ json: { continueBatch: true } }];"
-      },
+      "parameters": { "jsCode": "return [{ json: { continueBatch: true } }];" },
       "id": "continue_batch",
       "name": "Continue Batch",
       "type": "n8n-nodes-base.code",
@@ -179,175 +167,44 @@
     }
   ],
   "connections": {
-    "Start": {
-      "main": [
-        [
-          {
-            "node": "Seed Batch Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Seed Batch Items": {
-      "main": [
-        [
-          {
-            "node": "Split In Batches",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Start": { "main": [[{ "node": "Seed Batch Items", "type": "main", "index": 0 }]] },
+    "Seed Batch Items": { "main": [[{ "node": "Split In Batches", "type": "main", "index": 0 }]] },
     "Split In Batches": {
       "main": [
-        [
-          {
-            "node": "IF Already Processed?",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Batch Complete",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "IF Already Processed?", "type": "main", "index": 0 }],
+        [{ "node": "Batch Complete", "type": "main", "index": 0 }]
       ]
     },
     "IF Already Processed?": {
       "main": [
-        [
-          {
-            "node": "Skip Duplicate",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "SendIt - Publish Primary",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Skip Duplicate", "type": "main", "index": 0 }],
+        [{ "node": "POST /publish (primary)", "type": "main", "index": 0 }]
       ]
     },
-    "Skip Duplicate": {
-      "main": [
-        [
-          {
-            "node": "Continue Batch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SendIt - Publish Primary": {
-      "main": [
-        [
-          {
-            "node": "IF Publish Failed?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "Skip Duplicate": { "main": [[{ "node": "Continue Batch", "type": "main", "index": 0 }]] },
+    "POST /publish (primary)": {
+      "main": [[{ "node": "IF Publish Failed?", "type": "main", "index": 0 }]]
     },
     "IF Publish Failed?": {
       "main": [
-        [
-          {
-            "node": "Wait Before Retry",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Mark Primary Success",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        [{ "node": "Wait Before Retry", "type": "main", "index": 0 }],
+        [{ "node": "Mark Primary Success", "type": "main", "index": 0 }]
       ]
     },
     "Wait Before Retry": {
-      "main": [
-        [
-          {
-            "node": "Increment Retry Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Increment Retry Payload", "type": "main", "index": 0 }]]
     },
     "Increment Retry Payload": {
-      "main": [
-        [
-          {
-            "node": "SendIt - Publish Retry",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "POST /publish (retry)", "type": "main", "index": 0 }]]
     },
-    "SendIt - Publish Retry": {
-      "main": [
-        [
-          {
-            "node": "Mark Retry Result",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "POST /publish (retry)": {
+      "main": [[{ "node": "Mark Retry Result", "type": "main", "index": 0 }]]
     },
-    "Mark Retry Result": {
-      "main": [
-        [
-          {
-            "node": "Continue Batch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Mark Retry Result": { "main": [[{ "node": "Continue Batch", "type": "main", "index": 0 }]] },
     "Mark Primary Success": {
-      "main": [
-        [
-          {
-            "node": "Continue Batch",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "Continue Batch", "type": "main", "index": 0 }]]
     },
-    "Continue Batch": {
-      "main": [
-        [
-          {
-            "node": "Split In Batches",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    }
+    "Continue Batch": { "main": [[{ "node": "Split In Batches", "type": "main", "index": 0 }]] }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

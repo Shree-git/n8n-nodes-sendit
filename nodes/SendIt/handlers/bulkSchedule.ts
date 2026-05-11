@@ -1,7 +1,12 @@
 import { IHttpRequestMethods, NodeOperationError } from 'n8n-workflow';
 import { sendRequest, type ResourceHandler } from '../helpers';
 
-export const handleBulkSchedule: ResourceHandler = async (context, operation, i, optionalHeaders) => {
+export const handleBulkSchedule: ResourceHandler = async (
+  context,
+  operation,
+  i,
+  optionalHeaders
+) => {
   if (operation === 'listImports') {
     return sendRequest(
       context,
@@ -9,7 +14,7 @@ export const handleBulkSchedule: ResourceHandler = async (context, operation, i,
         method: 'GET' as IHttpRequestMethods,
         url: '/bulk-schedule',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -21,7 +26,7 @@ export const handleBulkSchedule: ResourceHandler = async (context, operation, i,
         method: 'GET' as IHttpRequestMethods,
         url: `/bulk-schedule/${importId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -37,7 +42,7 @@ export const handleBulkSchedule: ResourceHandler = async (context, operation, i,
         body: { csvContent, filename },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -54,7 +59,7 @@ export const handleBulkSchedule: ResourceHandler = async (context, operation, i,
         body: { csvContent, filename, skipErrors },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -66,7 +71,7 @@ export const handleBulkSchedule: ResourceHandler = async (context, operation, i,
         url: '/bulk-schedule/template',
         json: false,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

@@ -11,103 +11,84 @@
     },
     {
       "parameters": {
-        "resource": "listening",
-        "operation": "listKeywords",
-        "listeningActiveOnly": true,
-        "listeningKeywordType": "brand"
+        "url": "https://sendit.infiniteappsai.com/api/v1/listening/keywords?active=true&type=brand",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "list_keywords",
-      "name": "SendIt - Listening List Keywords",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [240, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /listening/keywords",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [240, 0]
     },
     {
       "parameters": {
-        "resource": "listening",
-        "operation": "listMentions",
-        "listeningMentionPlatform": "threads",
-        "listeningSentimentFilter": "",
-        "listeningIsRead": "",
-        "listeningIsArchived": "false",
-        "listeningLimit": 20,
-        "listeningOffset": 0,
-        "listeningSince": ""
+        "url": "https://sendit.infiniteappsai.com/api/v1/listening/mentions?platform=threads&isArchived=false&limit=20",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "list_mentions",
-      "name": "SendIt - Listening List Mentions",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [500, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /listening/mentions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 0]
     },
     {
       "parameters": {
-        "resource": "listening",
-        "operation": "listAlerts",
-        "listeningAlertsUnreadOnly": true,
-        "listeningAlertPriority": "",
-        "listeningLimit": 20
+        "url": "https://sendit.infiniteappsai.com/api/v1/listening/alerts?unreadOnly=true&limit=20",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "list_alerts",
-      "name": "SendIt - Listening List Alerts",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [760, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /listening/alerts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 0]
     },
     {
       "parameters": {
-        "resource": "listening",
-        "operation": "getSummary"
+        "url": "https://sendit.infiniteappsai.com/api/v1/listening/summary",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "get_summary",
-      "name": "SendIt - Listening Summary",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [1020, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /listening/summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 0]
     }
   ],
   "connections": {
-    "Start": {
-      "main": [[{ "node": "SendIt - Listening List Keywords", "type": "main", "index": 0 }]]
+    "Start": { "main": [[{ "node": "GET /listening/keywords", "type": "main", "index": 0 }]] },
+    "GET /listening/keywords": {
+      "main": [[{ "node": "GET /listening/mentions", "type": "main", "index": 0 }]]
     },
-    "SendIt - Listening List Keywords": {
-      "main": [[{ "node": "SendIt - Listening List Mentions", "type": "main", "index": 0 }]]
+    "GET /listening/mentions": {
+      "main": [[{ "node": "GET /listening/alerts", "type": "main", "index": 0 }]]
     },
-    "SendIt - Listening List Mentions": {
-      "main": [[{ "node": "SendIt - Listening List Alerts", "type": "main", "index": 0 }]]
-    },
-    "SendIt - Listening List Alerts": {
-      "main": [[{ "node": "SendIt - Listening Summary", "type": "main", "index": 0 }]]
+    "GET /listening/alerts": {
+      "main": [[{ "node": "GET /listening/summary", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

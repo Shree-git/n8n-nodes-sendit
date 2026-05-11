@@ -1,7 +1,12 @@
 import { IHttpRequestMethods, NodeOperationError } from 'n8n-workflow';
 import { sendRequest, parseJsonInput, type ResourceHandler } from '../helpers';
 
-export const handleConversions: ResourceHandler = async (context, operation, i, optionalHeaders) => {
+export const handleConversions: ResourceHandler = async (
+  context,
+  operation,
+  i,
+  optionalHeaders
+) => {
   if (operation === 'track') {
     const trackedLinkId = context.getNodeParameter('conversionTrackedLinkId', i) as string;
     const shortCode = context.getNodeParameter('conversionShortCode', i) as string;
@@ -25,7 +30,7 @@ export const handleConversions: ResourceHandler = async (context, operation, i, 
         body,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

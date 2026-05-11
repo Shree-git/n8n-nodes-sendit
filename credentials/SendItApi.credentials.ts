@@ -20,7 +20,8 @@ export class SendItApi implements ICredentialType {
       default: '',
       required: true,
       placeholder: 'sk_live_your_api_key_here',
-      description: 'Your SendIt API key. Get it from Dashboard → API Keys → Create New Key. Format: sk_live_... Restricted-scope keys are supported; operations requiring unavailable scopes will return API errors when executed.',
+      description:
+        'Your SendIt API key. Get it from Dashboard → API Keys → Create New Key. Format: sk_live_... Restricted-scope keys are supported; operations requiring unavailable scopes will return API errors when executed.',
     },
   ];
 

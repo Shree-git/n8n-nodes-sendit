@@ -27,7 +27,7 @@ export const handleValidation: ResourceHandler = async (context, operation, i, o
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

@@ -1,0 +1,126 @@
+{
+  "name": "00 \u2013 Health & Auth",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/health",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "health_check",
+      "name": "GET /health",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.status !== 'ok') throw new Error(`Expected status 'ok', got '${body.status}'`);\nif (body.service !== 'sendit-mcp') throw new Error(`Expected service 'sendit-mcp', got '${body.service}'`);\nif (!body.timestamp) throw new Error('Missing timestamp in health response');\nreturn [{ json: { test: 'health_check', passed: true } }];"
+      },
+      "id": "assert_health",
+      "name": "Assert Health OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/analytics?platform=linkedin",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer invalid_key_12345"
+            }
+          ]
+        }
+      },
+      "id": "bad_auth",
+      "name": "GET /analytics (bad key)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 401 && resp.success !== false) throw new Error(`Expected 401 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'bad_auth_401', passed: true } }];"
+      },
+      "id": "assert_bad_auth",
+      "name": "Assert 401",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /health": {
+      "main": [
+        [
+          {
+            "node": "Assert Health OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Health OK": {
+      "main": [
+        [
+          {
+            "node": "GET /analytics (bad key)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /analytics (bad key)": {
+      "main": [
+        [
+          {
+            "node": "Assert 401",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

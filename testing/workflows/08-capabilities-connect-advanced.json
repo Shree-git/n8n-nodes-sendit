@@ -11,78 +11,64 @@
     },
     {
       "parameters": {
-        "resource": "meta",
-        "operation": "getCapabilities"
+        "url": "https://sendit.infiniteappsai.com/api/v1/capabilities",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "meta_capabilities",
-      "name": "SendIt - Meta Capabilities",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [250, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /capabilities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [250, 0]
     },
     {
       "parameters": {
-        "resource": "connect",
-        "operation": "getConnectAction",
-        "connectPlatform": "linkedin"
+        "url": "https://sendit.infiniteappsai.com/api/v1/connect/linkedin",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "connect_action",
-      "name": "SendIt - Connect Action",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [520, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /connect/linkedin",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 0]
     },
     {
       "parameters": {
-        "resource": "advanced",
-        "operation": "apiRequest",
-        "advancedMethod": "GET",
-        "advancedPath": "/api/v2/capabilities",
-        "advancedQueryJson": "{}",
-        "advancedBodyJson": "",
-        "advancedResponseMode": "json",
-        "requestTimeoutMs": 10000
+        "url": "https://sendit.infiniteappsai.com/api/v2/capabilities",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "advanced_request",
-      "name": "SendIt - Advanced API Request",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [800, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /api/v2/capabilities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [800, 0]
     }
   ],
   "connections": {
-    "Start": {
-      "main": [[{ "node": "SendIt - Meta Capabilities", "type": "main", "index": 0 }]]
+    "Start": { "main": [[{ "node": "GET /capabilities", "type": "main", "index": 0 }]] },
+    "GET /capabilities": {
+      "main": [[{ "node": "GET /connect/linkedin", "type": "main", "index": 0 }]]
     },
-    "SendIt - Meta Capabilities": {
-      "main": [[{ "node": "SendIt - Connect Action", "type": "main", "index": 0 }]]
-    },
-    "SendIt - Connect Action": {
-      "main": [[{ "node": "SendIt - Advanced API Request", "type": "main", "index": 0 }]]
+    "GET /connect/linkedin": {
+      "main": [[{ "node": "GET /api/v2/capabilities", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

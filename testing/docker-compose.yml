@@ -4,7 +4,7 @@ services:
     image: docker.n8n.io/n8nio/n8n:stable
     restart: unless-stopped
     ports:
-      - "5678:5678"
+      - '5678:5678'
     env_file:
       - .env
     environment:
@@ -13,17 +13,26 @@ services:
       N8N_PROTOCOL: http
       N8N_EDITOR_BASE_URL: http://localhost:5678
       WEBHOOK_URL: http://localhost:5678
-      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'true'
       N8N_USER_FOLDER: /home/node/.n8n
       N8N_CUSTOM_EXTENSIONS: /home/node/.n8n/custom
-      N8N_DIAGNOSTICS_ENABLED: "false"
-      N8N_TEMPLATES_ENABLED: "false"
-      N8N_PUBLIC_API_DISABLED: "false"
+      N8N_DIAGNOSTICS_ENABLED: 'false'
+      N8N_TEMPLATES_ENABLED: 'false'
+      N8N_PUBLIC_API_DISABLED: 'false'
+      SENDIT_BASE_URL: 'https://sendit.infiniteappsai.com'
+      SENDIT_API_KEY: '${SENDIT_API_KEY:-}'
+      N8N_RESTRICT_ENVIRONMENT_VARIABLES_ACCESS: 'false'
     volumes:
       - sendit_n8n_test_data:/home/node/.n8n
       - ../:/home/node/.n8n/custom/n8n-nodes-sendit:ro
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:5678/healthz').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
       interval: 10s
       timeout: 5s
       retries: 10

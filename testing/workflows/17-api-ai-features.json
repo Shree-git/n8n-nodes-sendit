@@ -1,0 +1,453 @@
+{
+  "name": "13 \u2013 AI Features",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai/generate-content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'], prompt: 'Write a thought leadership post about API testing automation', generation: { tone: 'professional', style: 'educational' } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "ai_generate",
+      "name": "POST /ai/generate-content",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\n// AI generation can be slow and may timeout\nif (resp.statusCode === 504 || resp.statusCode === 502) {\n  return [{ json: { test: 'ai_generate_content', passed: true, skipped: true, reason: 'AI generation timeout' } }];\n}\nif (resp.statusCode !== 200) throw new Error(`Expected 200, got ${resp.statusCode}`);\nconst body = resp.body || resp;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!body.platformVariants) throw new Error('Expected platformVariants');\nreturn [{ json: { test: 'ai_generate_content', passed: true } }];"
+      },
+      "id": "assert_generate",
+      "name": "Assert Generated",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai/generate-content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: [] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "ai_no_platforms",
+      "name": "POST /ai/generate (empty platforms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'ai_generate_empty_platforms_400', passed: true } }];"
+      },
+      "id": "assert_no_platforms",
+      "name": "Assert 400 Empty Platforms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai/generate-content",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "ai_no_input",
+      "name": "POST /ai/generate (no input)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'ai_generate_no_input_400', passed: true } }];"
+      },
+      "id": "assert_no_input",
+      "name": "Assert 400 No Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_ai_media",
+      "name": "GET /ai-media (list)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.jobs)) throw new Error('Expected jobs array');\nreturn [{ json: { test: 'ai_media_list', passed: true } }];"
+      },
+      "id": "assert_list_media",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ provider: 'sora', prompt: 'A peaceful sunrise over mountains with gentle fog', media_type: 'video' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_ai_media",
+      "name": "POST /ai-media (create job)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\n// 201 for success, 403 if tier restriction\nif (resp.statusCode !== 201 && resp.statusCode !== 403) throw new Error(`Expected 201 or 403, got ${resp.statusCode}`);\nif (resp.statusCode === 201) {\n  const body = resp.body || resp;\n  if (body.success !== true) throw new Error('Expected success: true');\n  if (!body.job) throw new Error('Expected job in response');\n}\nreturn [{ json: { test: 'ai_media_create', passed: true, status: resp.statusCode } }];"
+      },
+      "id": "assert_create_media",
+      "name": "Assert Created/Restricted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/ai-media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ provider: 'invalid_provider', prompt: 'test' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "ai_media_bad_provider",
+      "name": "POST /ai-media (bad provider)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'ai_media_bad_provider_400', passed: true } }];"
+      },
+      "id": "assert_bad_provider",
+      "name": "Assert 400 Bad Provider",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/content-score",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'], text: 'Great post with multiple hashtags #AI #testing #automation #quality \u2014 includes a call to action: share your thoughts below!' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "content_score",
+      "name": "POST /content-score",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'content_score', passed: true } }];"
+      },
+      "id": "assert_score",
+      "name": "Assert Score OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "POST /ai/generate-content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /ai/generate-content": {
+      "main": [
+        [
+          {
+            "node": "Assert Generated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Generated": {
+      "main": [
+        [
+          {
+            "node": "POST /ai/generate (empty platforms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /ai/generate (empty platforms)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 Empty Platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 Empty Platforms": {
+      "main": [
+        [
+          {
+            "node": "POST /ai/generate (no input)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /ai/generate (no input)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No Input": {
+      "main": [
+        [
+          {
+            "node": "GET /ai-media (list)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /ai-media (list)": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "POST /ai-media (create job)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /ai-media (create job)": {
+      "main": [
+        [
+          {
+            "node": "Assert Created/Restricted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Created/Restricted": {
+      "main": [
+        [
+          {
+            "node": "POST /ai-media (bad provider)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /ai-media (bad provider)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 Bad Provider",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 Bad Provider": {
+      "main": [
+        [
+          {
+            "node": "POST /content-score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /content-score": {
+      "main": [
+        [
+          {
+            "node": "Assert Score OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

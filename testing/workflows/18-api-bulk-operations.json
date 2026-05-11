@@ -1,0 +1,384 @@
+{
+  "name": "14 \u2013 Bulk Operations",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule/template",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "get_template",
+      "name": "GET /bulk-schedule/template",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\n// Template is returned as CSV text\nconst body = typeof body === 'string' ? body : JSON.stringify(body);\nif (!body || body.length === 0) throw new Error('Expected non-empty CSV template');\nreturn [{ json: { test: 'bulk_template', passed: true, template: body } }];"
+      },
+      "id": "assert_template",
+      "name": "Assert Template OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ csvContent: 'platform,text,scheduledTime\\nlinkedin,n8n bulk test post 1,' + new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString() + '\\nlinkedin,n8n bulk test post 2,' + new Date(Date.now() + 9 * 24 * 60 * 60 * 1000).toISOString() }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "validate_csv",
+      "name": "POST /bulk-schedule/validate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (!body.validation) throw new Error('Expected validation report');\nif (!body.summary) throw new Error('Expected summary');\nif (typeof body.canImport !== 'boolean') throw new Error('Expected canImport boolean');\nreturn [{ json: { test: 'bulk_validate', passed: true } }];"
+      },
+      "id": "assert_validate",
+      "name": "Assert Validate OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "validate_no_csv",
+      "name": "POST /bulk-schedule/validate (no csv)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'bulk_validate_no_csv_400', passed: true } }];"
+      },
+      "id": "assert_no_csv",
+      "name": "Assert 400 No CSV",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ csvContent: 'platform,text,scheduledTime\\nlinkedin,n8n bulk import test,' + new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "import_csv",
+      "name": "POST /bulk-schedule/import",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'bulk_import', passed: true } }];"
+      },
+      "id": "assert_import",
+      "name": "Assert Import OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_imports",
+      "name": "GET /bulk-schedule (list)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (!body.imports) throw new Error('Expected imports in response');\nreturn [{ json: { test: 'bulk_list_imports', passed: true } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/bulk-schedule/import",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "import_no_csv",
+      "name": "POST /bulk-schedule/import (no csv)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'bulk_import_no_csv_400', passed: true } }];"
+      },
+      "id": "assert_import_no_csv",
+      "name": "Assert Import 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /bulk-schedule/template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /bulk-schedule/template": {
+      "main": [
+        [
+          {
+            "node": "Assert Template OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Template OK": {
+      "main": [
+        [
+          {
+            "node": "POST /bulk-schedule/validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /bulk-schedule/validate": {
+      "main": [
+        [
+          {
+            "node": "Assert Validate OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Validate OK": {
+      "main": [
+        [
+          {
+            "node": "POST /bulk-schedule/validate (no csv)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /bulk-schedule/validate (no csv)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No CSV": {
+      "main": [
+        [
+          {
+            "node": "POST /bulk-schedule/import",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /bulk-schedule/import": {
+      "main": [
+        [
+          {
+            "node": "Assert Import OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Import OK": {
+      "main": [
+        [
+          {
+            "node": "GET /bulk-schedule (list)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /bulk-schedule (list)": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "POST /bulk-schedule/import (no csv)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /bulk-schedule/import (no csv)": {
+      "main": [
+        [
+          {
+            "node": "Assert Import 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

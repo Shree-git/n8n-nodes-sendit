@@ -26,7 +26,7 @@ export const handleCampaign: ResourceHandler = async (context, operation, i, opt
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -42,7 +42,7 @@ export const handleCampaign: ResourceHandler = async (context, operation, i, opt
         url: '/campaigns',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -56,7 +56,7 @@ export const handleCampaign: ResourceHandler = async (context, operation, i, opt
         url: `/campaigns/${campaignId}/schedule`,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

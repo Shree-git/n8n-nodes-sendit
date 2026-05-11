@@ -1,0 +1,498 @@
+{
+  "name": "12 \u2013 Webhooks",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/webhooks/events-catalog",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "events_catalog",
+      "name": "GET /webhooks/events-catalog",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'webhooks_events_catalog', passed: true } }];"
+      },
+      "id": "assert_catalog",
+      "name": "Assert Catalog OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: 'https://httpbin.org/post', events: ['post.published', 'post.failed'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_webhook",
+      "name": "POST /webhooks (create)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!body.webhook || !body.webhook.id) throw new Error('Expected webhook with id');\nif (!body.webhook.secret) throw new Error('Expected webhook secret on creation');\nreturn [{ json: { test: 'webhooks_create', passed: true, webhookId: body.webhook.id } }];"
+      },
+      "id": "assert_create",
+      "name": "Assert Created",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_webhooks",
+      "name": "GET /webhooks (list)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.webhooks)) throw new Error('Expected webhooks array');\nconst webhookId = $node['Assert Created'].json.webhookId;\nconst found = body.webhooks.find(w => w.id === webhookId);\nif (!found) throw new Error('Created webhook not found in list');\nreturn [{ json: { test: 'webhooks_list', passed: true } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://sendit.infiniteappsai.com/api/v1/webhooks/{{ $node['Assert Created'].json.webhookId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "get_webhook",
+      "name": "GET /webhooks/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'webhooks_get', passed: true } }];"
+      },
+      "id": "assert_get",
+      "name": "Assert Get OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/webhooks/{{ $node['Assert Created'].json.webhookId }}/test",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "test_webhook",
+      "name": "POST /webhooks/:id/test",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'webhooks_test', passed: true } }];"
+      },
+      "id": "assert_test",
+      "name": "Assert Test OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ events: ['post.published'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_no_url",
+      "name": "POST /webhooks (no url)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nconst body = resp.body || resp;\nif (body.success !== false) throw new Error('Expected success: false');\nreturn [{ json: { test: 'webhooks_no_url_400', passed: true } }];"
+      },
+      "id": "assert_no_url",
+      "name": "Assert 400 No URL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/webhooks",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ url: 'https://httpbin.org/post' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_no_events",
+      "name": "POST /webhooks (no events)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'webhooks_no_events_400', passed: true } }];"
+      },
+      "id": "assert_no_events",
+      "name": "Assert 400 No Events",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 0]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/webhooks/{{ $node['Assert Created'].json.webhookId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "delete_webhook",
+      "name": "DELETE /webhooks/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3300, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'webhooks_delete', passed: true } }];"
+      },
+      "id": "assert_delete",
+      "name": "Assert Deleted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3520, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /webhooks/events-catalog",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /webhooks/events-catalog": {
+      "main": [
+        [
+          {
+            "node": "Assert Catalog OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Catalog OK": {
+      "main": [
+        [
+          {
+            "node": "POST /webhooks (create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /webhooks (create)": {
+      "main": [
+        [
+          {
+            "node": "Assert Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Created": {
+      "main": [
+        [
+          {
+            "node": "GET /webhooks (list)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /webhooks (list)": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "GET /webhooks/:id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /webhooks/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Get OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Get OK": {
+      "main": [
+        [
+          {
+            "node": "POST /webhooks/:id/test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /webhooks/:id/test": {
+      "main": [
+        [
+          {
+            "node": "Assert Test OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Test OK": {
+      "main": [
+        [
+          {
+            "node": "POST /webhooks (no url)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /webhooks (no url)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No URL": {
+      "main": [
+        [
+          {
+            "node": "POST /webhooks (no events)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /webhooks (no events)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Events",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No Events": {
+      "main": [
+        [
+          {
+            "node": "DELETE /webhooks/:id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE /webhooks/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

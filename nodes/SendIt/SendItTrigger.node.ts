@@ -12,11 +12,7 @@ import crypto from 'crypto';
 const SENDIT_API_BASE_URL = 'https://sendit.infiniteappsai.com/api/v1';
 const SIGNATURE_TOLERANCE_SECONDS = 300;
 
-function verifyWebhookSignature(
-  payload: string,
-  signature: string,
-  secret: string,
-): boolean {
+function verifyWebhookSignature(payload: string, signature: string, secret: string): boolean {
   try {
     const parts = signature.split(',');
     const timestampPart = parts.find((p) => p.startsWith('t='));
@@ -254,10 +250,13 @@ export class SendItTrigger implements INodeType {
                 method: 'GET' as IHttpRequestMethods,
                 baseURL: SENDIT_API_BASE_URL,
                 url: `/webhooks/${webhookData.webhookId}`,
-              },
+              }
             );
 
-            if (response && (response as { webhook?: { url?: string } }).webhook?.url === webhookUrl) {
+            if (
+              response &&
+              (response as { webhook?: { url?: string } }).webhook?.url === webhookUrl
+            ) {
               return true;
             }
           } catch {
@@ -274,22 +273,18 @@ export class SendItTrigger implements INodeType {
         const customEvent = this.getNodeParameter('customEvent') as string;
         const webhookData = this.getWorkflowStaticData('node');
 
-        const response = await this.helpers.httpRequestWithAuthentication.call(
-          this,
-          'sendItApi',
-          {
-            method: 'POST' as IHttpRequestMethods,
-            baseURL: SENDIT_API_BASE_URL,
-            url: '/webhooks',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              url: webhookUrl,
-              events: customEvent.trim().length > 0 ? [customEvent.trim()] : selectedEvents,
-            }),
+        const response = await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+          method: 'POST' as IHttpRequestMethods,
+          baseURL: SENDIT_API_BASE_URL,
+          url: '/webhooks',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({
+            url: webhookUrl,
+            events: customEvent.trim().length > 0 ? [customEvent.trim()] : selectedEvents,
+          }),
+        });
 
         const webhookResponse = response as { webhook?: { id?: string; secret?: string } };
         if (webhookResponse.webhook?.id) {
@@ -306,15 +301,11 @@ export class SendItTrigger implements INodeType {
 
         if (webhookData.webhookId) {
           try {
-            await this.helpers.httpRequestWithAuthentication.call(
-              this,
-              'sendItApi',
-              {
-                method: 'DELETE' as IHttpRequestMethods,
-                baseURL: SENDIT_API_BASE_URL,
-                url: `/webhooks/${webhookData.webhookId}`,
-              },
-            );
+            await this.helpers.httpRequestWithAuthentication.call(this, 'sendItApi', {
+              method: 'DELETE' as IHttpRequestMethods,
+              baseURL: SENDIT_API_BASE_URL,
+              url: `/webhooks/${webhookData.webhookId}`,
+            });
           } catch {
             // Ignore deletion errors.
           }
@@ -335,17 +326,18 @@ export class SendItTrigger implements INodeType {
 
     const signature = req.headers['x-sendit-signature'] as string | undefined;
     const bodyData = this.getBodyData();
-    const rawBody = typeof req.rawBody === 'string'
-      ? req.rawBody
-      : Buffer.isBuffer(req.rawBody)
-        ? req.rawBody.toString('utf8')
-        : JSON.stringify(bodyData);
+    const rawBody =
+      typeof req.rawBody === 'string'
+        ? req.rawBody
+        : Buffer.isBuffer(req.rawBody)
+          ? req.rawBody.toString('utf8')
+          : JSON.stringify(bodyData);
 
     if (secret) {
       if (!signature) {
         throw new NodeOperationError(
           this.getNode(),
-          'Missing X-SendIt-Signature header. Webhook request rejected.',
+          'Missing X-SendIt-Signature header. Webhook request rejected.'
         );
       }
 
@@ -353,7 +345,7 @@ export class SendItTrigger implements INodeType {
       if (!isValid) {
         throw new NodeOperationError(
           this.getNode(),
-          'Invalid webhook signature. Request may be tampered with or expired.',
+          'Invalid webhook signature. Request may be tampered with or expired.'
         );
       }
     }

@@ -1,0 +1,373 @@
+{
+  "name": "10 \u2013 Social Inbox",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/inbox",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_inbox",
+      "name": "GET /inbox",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.threads)) throw new Error('Expected threads array');\nif (typeof body.total !== 'number') throw new Error('Expected total count');\nreturn [{ json: { test: 'inbox_list', passed: true, hasThreads: body.threads.length > 0, firstThreadId: body.threads.length > 0 ? body.threads[0].id : null } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/inbox?status=open",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_open",
+      "name": "GET /inbox?status=open",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'inbox_list_open', passed: true } }];"
+      },
+      "id": "assert_open",
+      "name": "Assert Open OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node['Assert List OK'].json.hasThreads }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if_has_threads",
+      "name": "Has Threads?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://sendit.infiniteappsai.com/api/v1/inbox/{{ $node['Assert List OK'].json.firstThreadId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "get_thread",
+      "name": "GET /inbox/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1320, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nreturn [{ json: { test: 'inbox_get_thread', passed: true } }];"
+      },
+      "id": "assert_thread",
+      "name": "Assert Thread OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1540, -100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/inbox/{{ $node['Assert List OK'].json.firstThreadId }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ status: 'open' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "update_status",
+      "name": "POST /inbox/:id/status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1760, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nreturn [{ json: { test: 'inbox_update_status', passed: true } }];"
+      },
+      "id": "assert_status",
+      "name": "Assert Status OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1980, -100]
+    },
+    {
+      "parameters": {
+        "jsCode": "// No threads to test - skip gracefully\nreturn [{ json: { test: 'inbox_thread_skip', passed: true, skipped: true } }];"
+      },
+      "id": "skip_thread",
+      "name": "Skip (no threads)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 100]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/inbox/nonexistent_thread_id/reply",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: 'n8n test reply' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "reply_nonexistent",
+      "name": "POST /inbox/:id/reply (404)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 404 && status !== 400 && resp.success !== false) throw new Error(`Expected 404/400 or error, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'inbox_reply_nonexistent', passed: true } }];"
+      },
+      "id": "assert_reply_nonexistent",
+      "name": "Assert Reply 404/400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2420, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "GET /inbox",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /inbox": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "GET /inbox?status=open",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /inbox?status=open": {
+      "main": [
+        [
+          {
+            "node": "Assert Open OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Open OK": {
+      "main": [
+        [
+          {
+            "node": "Has Threads?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Threads?": {
+      "main": [
+        [
+          {
+            "node": "GET /inbox/:id",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skip (no threads)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /inbox/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Thread OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Thread OK": {
+      "main": [
+        [
+          {
+            "node": "POST /inbox/:id/status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /inbox/:id/status": {
+      "main": [
+        [
+          {
+            "node": "Assert Status OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Status OK": {
+      "main": [
+        [
+          {
+            "node": "POST /inbox/:id/reply (404)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Skip (no threads)": {
+      "main": [
+        [
+          {
+            "node": "POST /inbox/:id/reply (404)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /inbox/:id/reply (404)": {
+      "main": [
+        [
+          {
+            "node": "Assert Reply 404/400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

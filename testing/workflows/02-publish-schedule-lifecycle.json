@@ -21,23 +21,25 @@
     },
     {
       "parameters": {
-        "resource": "post",
-        "operation": "publish",
-        "platforms": "={{ $json.platforms }}",
-        "text": "={{ $json.publishText }}",
-        "mediaUrl": ""
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: $json.platforms, content: { text: $json.publishText } }) }}",
+        "options": {}
       },
       "id": "sendit_publish",
-      "name": "SendIt - Publish",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [520, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "POST /publish",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [520, 0]
     },
     {
       "parameters": {
@@ -51,24 +53,25 @@
     },
     {
       "parameters": {
-        "resource": "scheduledPost",
-        "operation": "create",
-        "platforms": "={{ $node['Build Lifecycle Fixture'].json.platforms }}",
-        "text": "={{ $node['Build Lifecycle Fixture'].json.scheduleText }}",
-        "mediaUrl": "",
-        "scheduledTime": "={{ $node['Build Lifecycle Fixture'].json.scheduledTime }}"
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/schedule",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: $node['Build Lifecycle Fixture'].json.platforms, content: { text: $node['Build Lifecycle Fixture'].json.scheduleText }, scheduledTime: $node['Build Lifecycle Fixture'].json.scheduledTime }) }}",
+        "options": {}
       },
       "id": "sendit_schedule_create",
-      "name": "SendIt - Schedule Create",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [1040, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "POST /schedule",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1040, 0]
     },
     {
       "parameters": {
@@ -82,21 +85,20 @@
     },
     {
       "parameters": {
-        "resource": "scheduledPost",
-        "operation": "getAll",
-        "platformFilter": "={{ $node['Build Lifecycle Fixture'].json.platformFilter }}"
+        "url": "=https://sendit.infiniteappsai.com/api/v1/scheduled?platform={{ $node['Build Lifecycle Fixture'].json.platformFilter }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "sendit_schedule_list",
-      "name": "SendIt - Schedule List",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [1560, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /scheduled",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 0]
     },
     {
       "parameters": {
@@ -110,21 +112,21 @@
     },
     {
       "parameters": {
-        "resource": "scheduledPost",
-        "operation": "trigger",
-        "scheduleId": "={{ $node['Assert Schedule Create'].json.scheduleId }}"
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/scheduled/{{ $node['Assert Schedule Create'].json.scheduleId }}/trigger",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}" }
+          ]
+        },
+        "options": {}
       },
       "id": "sendit_schedule_trigger",
-      "name": "SendIt - Schedule Trigger",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [2080, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "POST /scheduled/:id/trigger",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2080, 0]
     },
     {
       "parameters": {
@@ -138,110 +140,27 @@
     }
   ],
   "connections": {
-    "Start": {
-      "main": [
-        [
-          {
-            "node": "Build Lifecycle Fixture",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
+    "Start": { "main": [[{ "node": "Build Lifecycle Fixture", "type": "main", "index": 0 }]] },
     "Build Lifecycle Fixture": {
-      "main": [
-        [
-          {
-            "node": "SendIt - Publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "POST /publish", "type": "main", "index": 0 }]]
     },
-    "SendIt - Publish": {
-      "main": [
-        [
-          {
-            "node": "Assert Publish",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Assert Publish": {
-      "main": [
-        [
-          {
-            "node": "SendIt - Schedule Create",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "SendIt - Schedule Create": {
-      "main": [
-        [
-          {
-            "node": "Assert Schedule Create",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "POST /publish": { "main": [[{ "node": "Assert Publish", "type": "main", "index": 0 }]] },
+    "Assert Publish": { "main": [[{ "node": "POST /schedule", "type": "main", "index": 0 }]] },
+    "POST /schedule": {
+      "main": [[{ "node": "Assert Schedule Create", "type": "main", "index": 0 }]]
     },
     "Assert Schedule Create": {
-      "main": [
-        [
-          {
-            "node": "SendIt - Schedule List",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "GET /scheduled", "type": "main", "index": 0 }]]
     },
-    "SendIt - Schedule List": {
-      "main": [
-        [
-          {
-            "node": "Assert Schedule List",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "GET /scheduled": {
+      "main": [[{ "node": "Assert Schedule List", "type": "main", "index": 0 }]]
     },
     "Assert Schedule List": {
-      "main": [
-        [
-          {
-            "node": "SendIt - Schedule Trigger",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "POST /scheduled/:id/trigger", "type": "main", "index": 0 }]]
     },
-    "SendIt - Schedule Trigger": {
-      "main": [
-        [
-          {
-            "node": "Assert Schedule Trigger",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "POST /scheduled/:id/trigger": {
+      "main": [[{ "node": "Assert Schedule Trigger", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

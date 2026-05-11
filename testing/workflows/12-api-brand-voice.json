@@ -1,0 +1,440 @@
+{
+  "name": "06 \u2013 Brand Voice CRUD",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/brand-voice",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'n8n-test-voice-' + Date.now(), description: 'Test brand voice created by n8n', tone: 'professional', vocabulary: ['innovation', 'automation', 'quality'], bannedWords: ['jargon', 'synergy'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_voice",
+      "name": "POST /brand-voice (create)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!body.profile || !body.profile.id) throw new Error('Expected profile with id');\nreturn [{ json: { test: 'brand_voice_create', passed: true, voiceId: body.profile.id } }];"
+      },
+      "id": "assert_create",
+      "name": "Assert Created",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/brand-voice",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "list_voices",
+      "name": "GET /brand-voice (list)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!Array.isArray(body.profiles)) throw new Error('Expected profiles array');\nreturn [{ json: { test: 'brand_voice_list', passed: true } }];"
+      },
+      "id": "assert_list",
+      "name": "Assert List OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "url": "=https://sendit.infiniteappsai.com/api/v1/brand-voice/{{ $node['Assert Created'].json.voiceId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "get_voice",
+      "name": "GET /brand-voice/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (!body.profile) throw new Error('Expected profile in response');\nreturn [{ json: { test: 'brand_voice_get', passed: true } }];"
+      },
+      "id": "assert_get",
+      "name": "Assert Get OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/brand-voice/{{ $node['Assert Created'].json.voiceId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ tone: 'casual', description: 'Updated by n8n test' }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "update_voice",
+      "name": "PATCH /brand-voice/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'brand_voice_update', passed: true } }];"
+      },
+      "id": "assert_update",
+      "name": "Assert Updated",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/brand-voice/{{ $node['Assert Created'].json.voiceId }}/default",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "set_default",
+      "name": "POST /brand-voice/:id/default",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'brand_voice_set_default', passed: true } }];"
+      },
+      "id": "assert_default",
+      "name": "Assert Default Set",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/brand-voice",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({}) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "create_no_name",
+      "name": "POST /brand-voice (no name)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2420, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nreturn [{ json: { test: 'brand_voice_no_name_400', passed: true } }];"
+      },
+      "id": "assert_no_name",
+      "name": "Assert 400",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2640, 0]
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "=https://sendit.infiniteappsai.com/api/v1/brand-voice/{{ $node['Assert Created'].json.voiceId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "delete_voice",
+      "name": "DELETE /brand-voice/:id",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2860, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\n// DELETE may return 200 or 404 (known API behavior)\nif (resp.statusCode !== 200 && resp.statusCode !== 404) throw new Error(`Expected 200 or 404, got ${resp.statusCode}`);\nreturn [{ json: { test: 'brand_voice_delete', passed: true, statusCode: resp.statusCode } }];"
+      },
+      "id": "assert_delete",
+      "name": "Assert Deleted",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3080, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "POST /brand-voice (create)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /brand-voice (create)": {
+      "main": [
+        [
+          {
+            "node": "Assert Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Created": {
+      "main": [
+        [
+          {
+            "node": "GET /brand-voice (list)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /brand-voice (list)": {
+      "main": [
+        [
+          {
+            "node": "Assert List OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert List OK": {
+      "main": [
+        [
+          {
+            "node": "GET /brand-voice/:id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /brand-voice/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Get OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Get OK": {
+      "main": [
+        [
+          {
+            "node": "PATCH /brand-voice/:id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "PATCH /brand-voice/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Updated",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Updated": {
+      "main": [
+        [
+          {
+            "node": "POST /brand-voice/:id/default",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /brand-voice/:id/default": {
+      "main": [
+        [
+          {
+            "node": "Assert Default Set",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Default Set": {
+      "main": [
+        [
+          {
+            "node": "POST /brand-voice (no name)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /brand-voice (no name)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400": {
+      "main": [
+        [
+          {
+            "node": "DELETE /brand-voice/:id",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DELETE /brand-voice/:id": {
+      "main": [
+        [
+          {
+            "node": "Assert Deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

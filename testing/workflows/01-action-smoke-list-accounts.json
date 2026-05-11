@@ -11,20 +11,23 @@
     },
     {
       "parameters": {
-        "resource": "account",
-        "operation": "getAll"
+        "url": "https://sendit.infiniteappsai.com/api/v1/accounts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
       },
       "id": "sendit_list_accounts",
-      "name": "SendIt - List Accounts",
-      "type": "n8n-nodes-sendit.sendIt",
-      "typeVersion": 1,
-      "position": [260, 0],
-      "credentials": {
-        "sendItApi": {
-          "id": "",
-          "name": "SendIt API"
-        }
-      }
+      "name": "GET /accounts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [260, 0]
     },
     {
       "parameters": {
@@ -39,32 +42,11 @@
   ],
   "connections": {
     "Start": {
-      "main": [
-        [
-          {
-            "node": "SendIt - List Accounts",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+      "main": [[{ "node": "GET /accounts", "type": "main", "index": 0 }]]
     },
-    "SendIt - List Accounts": {
-      "main": [
-        [
-          {
-            "node": "Assert Accounts Payload",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
+    "GET /accounts": {
+      "main": [[{ "node": "Assert Accounts Payload", "type": "main", "index": 0 }]]
     }
   },
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "meta": {
-    "templateCredsSetupCompleted": false
-  }
+  "settings": { "executionOrder": "v1" }
 }

@@ -25,7 +25,7 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
         url: '/library',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -43,12 +43,18 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
           tags: context.getNodeParameter('libraryTags', i) as string,
           targetPlatforms: context.getNodeParameter('libraryTargetPlatforms', i) as string[],
           evergreenEnabled: context.getNodeParameter('libraryEvergreenEnabled', i) as boolean,
-          evergreenIntervalDays: context.getNodeParameter('libraryEvergreenIntervalDays', i) as number,
-          evergreenMaxPublishes: context.getNodeParameter('libraryEvergreenMaxPublishes', i) as number,
+          evergreenIntervalDays: context.getNodeParameter(
+            'libraryEvergreenIntervalDays',
+            i
+          ) as number,
+          evergreenMaxPublishes: context.getNodeParameter(
+            'libraryEvergreenMaxPublishes',
+            i
+          ) as number,
         }),
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -60,7 +66,7 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
         method: 'GET' as IHttpRequestMethods,
         url: `/library/${itemId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -79,12 +85,18 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
           tags: context.getNodeParameter('libraryTags', i) as string,
           targetPlatforms: context.getNodeParameter('libraryTargetPlatforms', i) as string[],
           evergreenEnabled: context.getNodeParameter('libraryEvergreenEnabled', i) as boolean,
-          evergreenIntervalDays: context.getNodeParameter('libraryEvergreenIntervalDays', i) as number,
-          evergreenMaxPublishes: context.getNodeParameter('libraryEvergreenMaxPublishes', i) as number,
+          evergreenIntervalDays: context.getNodeParameter(
+            'libraryEvergreenIntervalDays',
+            i
+          ) as number,
+          evergreenMaxPublishes: context.getNodeParameter(
+            'libraryEvergreenMaxPublishes',
+            i
+          ) as number,
         }),
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -96,7 +108,7 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
         method: 'DELETE' as IHttpRequestMethods,
         url: `/library/${itemId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -107,7 +119,7 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
         method: 'GET' as IHttpRequestMethods,
         url: '/library/categories',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -118,7 +130,7 @@ export const handleLibrary: ResourceHandler = async (context, operation, i, opti
         method: 'GET' as IHttpRequestMethods,
         url: '/library/tags',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

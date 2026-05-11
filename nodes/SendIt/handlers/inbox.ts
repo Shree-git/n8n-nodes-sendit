@@ -22,7 +22,7 @@ export const handleInbox: ResourceHandler = async (context, operation, i, option
         url: '/inbox',
         qs,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -38,7 +38,7 @@ export const handleInbox: ResourceHandler = async (context, operation, i, option
         body: { text: message },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -50,7 +50,7 @@ export const handleInbox: ResourceHandler = async (context, operation, i, option
         method: 'GET' as IHttpRequestMethods,
         url: `/inbox/${threadId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -65,7 +65,7 @@ export const handleInbox: ResourceHandler = async (context, operation, i, option
         body: { status },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

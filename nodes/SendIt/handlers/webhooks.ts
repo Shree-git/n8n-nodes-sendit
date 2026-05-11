@@ -9,7 +9,7 @@ export const handleWebhooks: ResourceHandler = async (context, operation, i, opt
         method: 'GET' as IHttpRequestMethods,
         url: '/webhooks',
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -21,7 +21,7 @@ export const handleWebhooks: ResourceHandler = async (context, operation, i, opt
         method: 'GET' as IHttpRequestMethods,
         url: `/webhooks/${webhookId}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -34,7 +34,10 @@ export const handleWebhooks: ResourceHandler = async (context, operation, i, opt
     const body: Record<string, unknown> = { active };
     if (url) body.url = url;
     if (eventsRaw) {
-      const events = eventsRaw.split(',').map((e) => e.trim()).filter((e) => e.length > 0);
+      const events = eventsRaw
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0);
       if (events.length > 0) body.events = events;
     }
 
@@ -46,7 +49,7 @@ export const handleWebhooks: ResourceHandler = async (context, operation, i, opt
         body,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -59,7 +62,7 @@ export const handleWebhooks: ResourceHandler = async (context, operation, i, opt
         url: `/webhooks/${webhookId}/test`,
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

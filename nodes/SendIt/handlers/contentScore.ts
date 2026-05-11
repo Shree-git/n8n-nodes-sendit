@@ -1,7 +1,12 @@
 import { IHttpRequestMethods, NodeOperationError } from 'n8n-workflow';
 import { sendRequest, maybeArray, type ResourceHandler } from '../helpers';
 
-export const handleContentScore: ResourceHandler = async (context, operation, i, optionalHeaders) => {
+export const handleContentScore: ResourceHandler = async (
+  context,
+  operation,
+  i,
+  optionalHeaders
+) => {
   if (operation === 'score') {
     const platforms = context.getNodeParameter('platforms', i) as string[];
     const text = context.getNodeParameter('text', i) as string;
@@ -23,7 +28,7 @@ export const handleContentScore: ResourceHandler = async (context, operation, i,
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

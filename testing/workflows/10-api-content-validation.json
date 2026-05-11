@@ -1,0 +1,323 @@
+{
+  "name": "01 \u2013 Content Validation",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'], content: { text: 'Hello from n8n test suite! Testing content validation.' } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "validate_ok",
+      "name": "POST /validate (valid)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nif (typeof body.valid !== 'boolean') throw new Error('Expected valid field to be boolean');\nif (!Array.isArray(body.errors)) throw new Error('Expected errors array');\nif (!body.platformLimits) throw new Error('Expected platformLimits object');\nreturn [{ json: { test: 'validate_valid_content', passed: true } }];"
+      },
+      "id": "assert_validate_ok",
+      "name": "Assert Validate OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ content: { text: 'test' } }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "validate_no_platforms",
+      "name": "POST /validate (no platforms)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [660, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nconst body = resp.body || resp;\nif (body.success !== false) throw new Error('Expected success: false');\nif (!body.error || !body.error.includes('platforms')) throw new Error('Expected error about missing platforms');\nreturn [{ json: { test: 'validate_missing_platforms_400', passed: true } }];"
+      },
+      "id": "assert_validate_no_platforms",
+      "name": "Assert 400 No Platforms",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [880, 0]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://sendit.infiniteappsai.com/api/v1/validate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ platforms: ['linkedin'] }) }}",
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "validate_no_content",
+      "name": "POST /validate (no content)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1100, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nconst body = resp.body || resp;\nif (body.success !== false) throw new Error('Expected success: false');\nif (!body.error || !body.error.includes('content')) throw new Error('Expected error about missing content');\nreturn [{ json: { test: 'validate_missing_content_400', passed: true } }];"
+      },
+      "id": "assert_validate_no_content",
+      "name": "Assert 400 No Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1320, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/requirements?platform=linkedin",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "requirements_ok",
+      "name": "GET /requirements",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1540, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.all()[0].json;\nif (body.success !== true) throw new Error('Expected success: true');\nreturn [{ json: { test: 'requirements_linkedin', passed: true } }];"
+      },
+      "id": "assert_requirements",
+      "name": "Assert Requirements OK",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1760, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://sendit.infiniteappsai.com/api/v1/requirements",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "={{'Bearer ' + $env.SENDIT_API_KEY}}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true
+            }
+          }
+        }
+      },
+      "id": "requirements_no_platform",
+      "name": "GET /requirements (no platform)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1980, 0],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const resp = $input.all()[0].json;\nconst status = resp.statusCode || resp.status; if (status !== 400 && resp.success !== false) throw new Error(`Expected 400 or error response, got status=${status} success=${resp.success}`);\nconst body = resp.body || resp;\nif (body.success !== false) throw new Error('Expected success: false');\nreturn [{ json: { test: 'requirements_missing_platform_400', passed: true } }];"
+      },
+      "id": "assert_requirements_no_platform",
+      "name": "Assert 400 No Platform",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2200, 0]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "POST /validate (valid)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /validate (valid)": {
+      "main": [
+        [
+          {
+            "node": "Assert Validate OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Validate OK": {
+      "main": [
+        [
+          {
+            "node": "POST /validate (no platforms)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /validate (no platforms)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Platforms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No Platforms": {
+      "main": [
+        [
+          {
+            "node": "POST /validate (no content)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "POST /validate (no content)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert 400 No Content": {
+      "main": [
+        [
+          {
+            "node": "GET /requirements",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /requirements": {
+      "main": [
+        [
+          {
+            "node": "Assert Requirements OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assert Requirements OK": {
+      "main": [
+        [
+          {
+            "node": "GET /requirements (no platform)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET /requirements (no platform)": {
+      "main": [
+        [
+          {
+            "node": "Assert 400 No Platform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

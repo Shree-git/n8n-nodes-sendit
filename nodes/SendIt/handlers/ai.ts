@@ -22,7 +22,7 @@ export const handleAi: ResourceHandler = async (context, operation, i, optionalH
         body: buildAiBody(platforms, mediaUrl, prompt, aiOptions),
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -43,7 +43,7 @@ export const handleAi: ResourceHandler = async (context, operation, i, optionalH
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -66,7 +66,7 @@ export const handleAi: ResourceHandler = async (context, operation, i, optionalH
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -87,7 +87,7 @@ export const handleAi: ResourceHandler = async (context, operation, i, optionalH
         },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

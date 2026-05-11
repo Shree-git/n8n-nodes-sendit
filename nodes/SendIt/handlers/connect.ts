@@ -10,7 +10,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
         method: 'GET' as IHttpRequestMethods,
         url: `/connect/${platform}`,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -28,7 +28,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
         body: { platform, credentials },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 
@@ -37,7 +37,9 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
     const webhookUrl = context.getNodeParameter('connectWebhookUrl', i) as string;
     const metadataJson = context.getNodeParameter('connectMetadataJson', i) as string;
     const parsedMetadata = parseJsonInput(context, metadataJson, 'Metadata JSON');
-    const metadata = parsedMetadata ? assertObject(parsedMetadata, 'Metadata JSON must parse to an object') : undefined;
+    const metadata = parsedMetadata
+      ? assertObject(parsedMetadata, 'Metadata JSON must parse to an object')
+      : undefined;
 
     return sendRequest(
       context,
@@ -47,7 +49,7 @@ export const handleConnect: ResourceHandler = async (context, operation, i, opti
         body: { platform, webhookUrl, metadata },
         json: true,
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

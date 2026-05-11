@@ -11,7 +11,10 @@ interface TriggerHarnessOptions {
 
 function createSignature(secret: string, body: Record<string, unknown>, timestamp: number): string {
   const payload = JSON.stringify(body);
-  const digest = crypto.createHmac('sha256', secret).update(`${timestamp}.${payload}`).digest('hex');
+  const digest = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${payload}`)
+    .digest('hex');
   return `t=${timestamp},v1=${digest}`;
 }
 
@@ -50,7 +53,7 @@ describe('SendIt trigger registration', () => {
     const httpRequestWithAuthentication = vi.fn(async () => ({
       webhook: {
         id: 'wh_123',
-        secret: 'whsec_123',
+        secret: 'sendit_webhook_secret_123',
       },
     }));
 
@@ -71,7 +74,7 @@ describe('SendIt trigger registration', () => {
     const created = await node.webhookMethods.default.create.call(context as never);
 
     expect(created).toBe(true);
-    expect(webhookData).toMatchObject({ webhookId: 'wh_123', webhookSecret: 'whsec_123' });
+    expect(webhookData).toMatchObject({ webhookId: 'wh_123', webhookSecret: 'sendit_webhook_secret_123' });
 
     const request = httpRequestWithAuthentication.mock.calls[0][1] as Record<string, unknown>;
     expect(request).toMatchObject({ method: 'POST', url: '/webhooks' });
@@ -85,7 +88,7 @@ describe('SendIt trigger registration', () => {
     const httpRequestWithAuthentication = vi.fn(async () => ({
       webhook: {
         id: 'wh_456',
-        secret: 'whsec_456',
+        secret: 'sendit_webhook_secret_456',
       },
     }));
 
@@ -116,7 +119,7 @@ describe('SendIt trigger registration', () => {
 
 describe('SendIt trigger signature verification', () => {
   it('accepts a valid signature', async () => {
-    const secret = 'whsec_test_secret';
+    const secret = 'sendit_webhook_secret_test';
     const body = { event: 'post.published', postId: 'post_123' };
     const timestamp = Math.floor(Date.now() / 1000);
     const signature = createSignature(secret, body, timestamp);
@@ -135,23 +138,24 @@ describe('SendIt trigger signature verification', () => {
 
   it('rejects missing signature header', async () => {
     const harness = createWebhookHarness({
-      secret: 'whsec_test_secret',
+      secret: 'sendit_webhook_secret_test',
       body: { event: 'post.failed' },
       headers: {},
     });
 
     await expect(harness.run()).rejects.toThrow(NodeOperationError);
     await expect(harness.run()).rejects.toThrow(
-      'Missing X-SendIt-Signature header. Webhook request rejected.',
+      'Missing X-SendIt-Signature header. Webhook request rejected.'
     );
   });
 
   it('rejects invalid signature', async () => {
-    const secret = 'whsec_test_secret';
+    const secret = 'sendit_webhook_secret_test';
     const body = { event: 'post.scheduled', postId: 'post_1' };
     const timestamp = Math.floor(Date.now() / 1000);
     const validSignature = createSignature(secret, body, timestamp);
-    const tamperedSignature = `${validSignature.slice(0, -1)}0`;
+    const lastChar = validSignature.slice(-1);
+    const tamperedSignature = `${validSignature.slice(0, -1)}${lastChar === '0' ? 'f' : '0'}`;
 
     const harness = createWebhookHarness({
       secret,
@@ -161,12 +165,12 @@ describe('SendIt trigger signature verification', () => {
 
     await expect(harness.run()).rejects.toThrow(NodeOperationError);
     await expect(harness.run()).rejects.toThrow(
-      'Invalid webhook signature. Request may be tampered with or expired.',
+      'Invalid webhook signature. Request may be tampered with or expired.'
     );
   });
 
   it('rejects expired timestamp signatures', async () => {
-    const secret = 'whsec_test_secret';
+    const secret = 'sendit_webhook_secret_test';
     const body = { event: 'post.deleted', postId: 'post_42' };
     const expiredTimestamp = Math.floor(Date.now() / 1000) - 301;
     const signature = createSignature(secret, body, expiredTimestamp);
@@ -179,7 +183,7 @@ describe('SendIt trigger signature verification', () => {
 
     await expect(harness.run()).rejects.toThrow(NodeOperationError);
     await expect(harness.run()).rejects.toThrow(
-      'Invalid webhook signature. Request may be tampered with or expired.',
+      'Invalid webhook signature. Request may be tampered with or expired.'
     );
   });
 });

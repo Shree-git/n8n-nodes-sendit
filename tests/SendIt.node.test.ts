@@ -1,6 +1,3 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { SendIt } from '../nodes/SendIt/SendIt.node';
 
@@ -22,11 +19,13 @@ interface ExecuteTestHarness {
 
 function createHarness(
   parameters: NodeParameters,
-  overrides: ExecuteContextOverrides = {},
+  overrides: ExecuteContextOverrides = {}
 ): ExecuteTestHarness {
   const response = overrides.response ?? { ok: true };
   const httpRequestWithAuthentication = vi.fn(async () => response);
-  const assertBinaryData = vi.fn(() => overrides.assertBinaryDataResult ?? { fileName: 'upload.bin' });
+  const assertBinaryData = vi.fn(
+    () => overrides.assertBinaryDataResult ?? { fileName: 'upload.bin' }
+  );
   const getBinaryDataBuffer = vi.fn(async () => overrides.binaryBuffer ?? Buffer.from('buffer'));
 
   const context = {
@@ -246,13 +245,12 @@ describe('SendIt node regression mapping', () => {
       {
         resource: 'media',
         operation: 'upload',
-        mediaInputMode: 'binary',
         binaryPropertyName: 'attachment',
       },
       {
         assertBinaryDataResult: { fileName: 'photo.png' },
         binaryBuffer: Buffer.from('img-bytes'),
-      },
+      }
     );
 
     await harness.run();
@@ -264,31 +262,6 @@ describe('SendIt node regression mapping', () => {
     expect(request.body).toBeInstanceOf(FormData);
     const file = (request.body as FormData).get('file') as File;
     expect(file.name).toBe('photo.png');
-  });
-
-  it('uploads media from file path mode', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'sendit-test-'));
-    const filePath = path.join(tempDir, 'upload.txt');
-    await writeFile(filePath, 'hello from test', 'utf8');
-
-    try {
-      const harness = createHarness({
-        resource: 'media',
-        operation: 'upload',
-        mediaInputMode: 'filePath',
-        filePath,
-      });
-
-      await harness.run();
-      const { request } = getRequestCall(harness.httpRequestWithAuthentication);
-
-      expect(request).toMatchObject({ method: 'POST', url: '/media/upload' });
-      expect(request.body).toBeInstanceOf(FormData);
-      const file = (request.body as FormData).get('file') as File;
-      expect(file.name).toBe('upload.txt');
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
   });
 });
 
@@ -746,7 +719,9 @@ describe('SendIt node advanced apiRequest', () => {
       requestTimeoutMs: 5000,
     });
 
-    await expect(harness.run()).rejects.toThrow('Advanced path must start with /api/v1/ or /api/v2/');
+    await expect(harness.run()).rejects.toThrow(
+      'Advanced path must start with /api/v1/ or /api/v2/'
+    );
   });
 
   it('rejects invalid query json', async () => {
@@ -789,7 +764,12 @@ describe('SendIt node Phase 2 new resources', () => {
     // Dead Letter
     {
       name: 'deadLetter.list',
-      params: { resource: 'deadLetter', operation: 'list', deadLetterStatus: 'dead', deadLetterLimit: 50 },
+      params: {
+        resource: 'deadLetter',
+        operation: 'list',
+        deadLetterStatus: 'dead',
+        deadLetterLimit: 50,
+      },
       expected: { method: 'GET', url: '/dead-letter' },
     },
     {
@@ -1053,5 +1033,49 @@ describe('SendIt node pagination and body verification', () => {
       accountLimit: 50,
     });
     await expect(harness.run()).rejects.toThrow('Unknown operation: nonexistent');
+  });
+});
+
+describe('SendIt node error handling', () => {
+  it('wraps 401 errors with credential hint', async () => {
+    const harness = createHarness({
+      resource: 'meta',
+      operation: 'getCapabilities',
+    });
+    harness.httpRequestWithAuthentication.mockRejectedValueOnce(
+      Object.assign(new Error('Unauthorized'), { httpCode: 401 })
+    );
+    await expect(harness.run()).rejects.toThrow(
+      'API key is invalid or expired. Check your SendIt API credentials in n8n.'
+    );
+  });
+
+  it('wraps 429 errors with rate limit hint', async () => {
+    const harness = createHarness({
+      resource: 'meta',
+      operation: 'getCapabilities',
+    });
+    harness.httpRequestWithAuthentication.mockRejectedValueOnce(
+      Object.assign(new Error('Too Many Requests'), { httpCode: 429 })
+    );
+    await expect(harness.run()).rejects.toThrow('Rate limit exceeded');
+  });
+
+  it('wraps 400 errors with API detail', async () => {
+    const harness = createHarness({
+      resource: 'post',
+      operation: 'publish',
+      platforms: ['linkedin'],
+      text: '',
+      mediaUrl: '',
+      additionalOptions: {},
+    });
+    harness.httpRequestWithAuthentication.mockRejectedValueOnce(
+      Object.assign(new Error('text is required'), {
+        httpCode: 400,
+        description: 'text is required',
+      })
+    );
+    await expect(harness.run()).rejects.toThrow('Bad request: text is required');
   });
 });

@@ -12,7 +12,7 @@ export const handleAnalytics: ResourceHandler = async (context, operation, i, op
         url: '/analytics',
         qs: { platform },
       },
-      optionalHeaders,
+      optionalHeaders
     );
   }
 

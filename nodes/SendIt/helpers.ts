@@ -16,7 +16,10 @@ export function getOptionalString(value: unknown): string | undefined {
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-export function buildOptionalHeaders(teamId?: string, idempotencyKey?: string): Record<string, string> {
+export function buildOptionalHeaders(
+  teamId?: string,
+  idempotencyKey?: string
+): Record<string, string> {
   const headers: Record<string, string> = {};
   if (teamId) {
     headers['X-Team-ID'] = teamId;
@@ -53,7 +56,11 @@ export function maybeArray(value: unknown): string[] | undefined {
   return undefined;
 }
 
-export function parseJsonInput(context: IExecuteFunctions, value: string | undefined, label: string): unknown {
+export function parseJsonInput(
+  context: IExecuteFunctions,
+  value: string | undefined,
+  label: string
+): unknown {
   if (!value || value.trim().length === 0) {
     return undefined;
   }
@@ -96,7 +103,7 @@ export async function sendRequest(
   context: IExecuteFunctions,
   request: { method: IHttpRequestMethods; url: string; [key: string]: unknown },
   optionalHeaders: Record<string, string>,
-  baseURL: string = SENDIT_API_BASE_URL,
+  baseURL: string = SENDIT_API_BASE_URL
 ): Promise<unknown> {
   const requestHeaders = (request.headers as Record<string, string> | undefined) ?? {};
   const headers = {
@@ -104,21 +111,49 @@ export async function sendRequest(
     ...optionalHeaders,
   };
 
-  return context.helpers.httpRequestWithAuthentication.call(
-    context,
-    'sendItApi',
-    {
+  try {
+    return await context.helpers.httpRequestWithAuthentication.call(context, 'sendItApi', {
       baseURL,
       ...request,
       headers: Object.keys(headers).length > 0 ? headers : undefined,
-    } as unknown as IHttpRequestOptions,
-  );
+    } as unknown as IHttpRequestOptions);
+  } catch (error: unknown) {
+    const err = error as {
+      httpCode?: number;
+      statusCode?: number;
+      message?: string;
+      description?: string;
+    };
+    const statusCode = err.httpCode ?? err.statusCode;
+
+    if (statusCode === 401) {
+      throw new NodeOperationError(
+        context.getNode(),
+        'API key is invalid or expired. Check your SendIt API credentials in n8n.',
+        { description: err.message }
+      );
+    }
+
+    if (statusCode === 429) {
+      throw new NodeOperationError(
+        context.getNode(),
+        'Rate limit exceeded. Wait and retry, or reduce request frequency.',
+        { description: 'SendIt API allows 50 requests per minute per API key.' }
+      );
+    }
+
+    if (statusCode === 400) {
+      const detail = err.description || err.message || 'Bad request';
+      throw new NodeOperationError(context.getNode(), `Bad request: ${detail}`, {
+        description: `The API rejected the request to ${request.method} ${request.url}. Check your parameters.`,
+      });
+    }
+
+    throw error;
+  }
 }
 
-export function assertObject(
-  value: unknown,
-  message: string,
-): Record<string, unknown> {
+export function assertObject(value: unknown, message: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(message);
   }
@@ -139,7 +174,7 @@ export function buildAiBody(
   platforms: string[],
   mediaUrl: string,
   prompt: string,
-  aiOptions: AiOptions,
+  aiOptions: AiOptions
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {
     platforms,
@@ -186,8 +221,10 @@ export function buildLibraryBody(params: {
     tags: maybeArray(params.tags),
     targetPlatforms: params.targetPlatforms.length > 0 ? params.targetPlatforms : undefined,
     evergreenEnabled: params.evergreenEnabled,
-    evergreenIntervalDays: params.evergreenIntervalDays > 0 ? params.evergreenIntervalDays : undefined,
-    evergreenMaxPublishes: params.evergreenMaxPublishes > 0 ? params.evergreenMaxPublishes : undefined,
+    evergreenIntervalDays:
+      params.evergreenIntervalDays > 0 ? params.evergreenIntervalDays : undefined,
+    evergreenMaxPublishes:
+      params.evergreenMaxPublishes > 0 ? params.evergreenMaxPublishes : undefined,
   };
 }
 
@@ -195,5 +232,5 @@ export type ResourceHandler = (
   context: IExecuteFunctions,
   operation: string,
   itemIndex: number,
-  optionalHeaders: Record<string, string>,
+  optionalHeaders: Record<string, string>
 ) => Promise<unknown>;
